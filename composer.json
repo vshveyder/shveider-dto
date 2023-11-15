@@ -8,11 +8,14 @@
             "ShveiderDtoTest\\": "test/"
         }
     },
+    "minimum-stability": "dev",
     "authors": [
         {
             "name": "vitalii.shveider",
             "email": "vshveyder@gmail.com"
         }
     ],
-    "require": {}
+    "require": {
+        "php": ">=8.2"
+    }
 }

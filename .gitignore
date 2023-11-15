@@ -1,0 +1,8 @@
+vendor
+test/Generated
+test/DTO/*/Transfers/Generated
+/.env
+/.env.*
+*.log
+*.sql
+.idea
