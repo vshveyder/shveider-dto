@@ -1,0 +1,18 @@
+{
+    "name": "vitalii.shveider/shveider-dto",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "ShveiderDto\\": "src/",
+            "ShveiderDtoTest\\": "test/"
+        }
+    },
+    "authors": [
+        {
+            "name": "vitalii.shveider",
+            "email": "vshveyder@gmail.com"
+        }
+    ],
+    "require": {}
+}
