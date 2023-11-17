@@ -18,4 +18,17 @@ trait GetTypeTrait
 
         return $type;
     }
+
+    public function getTypeFromAttributeString(string $type): string
+    {
+        if (str_contains($type, '\\') || class_exists('\\' . $type)) {
+            if (class_exists('\\' . trim($type, '\\'))) {
+                $type = '\\' . trim($type, '\\');
+            }
+
+            return $type;
+        }
+
+        return $type;
+    }
 }

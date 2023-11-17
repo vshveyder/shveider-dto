@@ -4,19 +4,23 @@ namespace ShveiderDto\Plugins;
 
 use ReflectionClass;
 use ReflectionProperty;
+use ShveiderDto\AbstractTransfer;
 use ShveiderDto\Attributes\ArrayOf;
+use ShveiderDto\Helpers\GetTypeTrait;
 use ShveiderDto\ShveiderDtoExpanderPluginsInterface;
 use ShveiderDto\GenerateDTOConfig;
-use ShveiderDto\Model\Code\MethodGenerator;
-use ShveiderDto\Model\Code\TraitGenerator;
+use ShveiderDto\Model\Code\Method;
+use ShveiderDto\Model\Code\DtoTrait;
 
 class ArrayOfShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPluginsInterface
 {
+    use GetTypeTrait;
+
     public function expand(
-        ReflectionClass $reflectionClass,
+        ReflectionClass   $reflectionClass,
         GenerateDTOConfig $config,
-        TraitGenerator $traitGenerator
-    ): TraitGenerator {
+        DtoTrait          $traitGenerator
+    ): DtoTrait {
         foreach ($reflectionClass->getProperties() as $property) {
             $attributes = $property->getAttributes(ArrayOf::class);
 
@@ -28,7 +32,7 @@ class ArrayOfShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPluginsInte
         return $traitGenerator;
     }
 
-    private function expandByProperty(ReflectionProperty $reflectionProperty, TraitGenerator $traitGenerator): void
+    protected function expandByProperty(ReflectionProperty $reflectionProperty, DtoTrait $traitGenerator): void
     {
         $attributes = $reflectionProperty->getAttributes(ArrayOf::class);
         $attribute = $attributes[0];
@@ -44,17 +48,29 @@ class ArrayOfShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPluginsInte
         $propertyName = $reflectionProperty->getName();
         $methodName = 'add' . ucfirst($instance->singular);
 
-        $methodGenerator = new MethodGenerator($methodName, [$instance->type . ' $v'], 'static');
-        $methodGenerator->insertRaw("\$this->$propertyName\[] = \$v;");
+        $methodGenerator = $this->createMethodGenerator($methodName, $instance);
+        $methodGenerator->insertRaw("\$this->__modified['$propertyName'] = true;");
+        $methodGenerator->insertRaw("\$this->{$propertyName}[] = \$v;");
         $methodGenerator->insertRaw("return \$this;");
 
         $traitGenerator->addMethod($methodName, $methodGenerator);
     }
 
-    private function expandGetAndSetMethods(ReflectionProperty $reflectionProperty, TraitGenerator $traitGenerator, ArrayOf $arrayOf): void
+    protected function expandGetAndSetMethods(ReflectionProperty $reflectionProperty, DtoTrait $traitGenerator, ArrayOf $arrayOf): void
     {
+        $type = $this->getTypeFromAttributeString($arrayOf->type);
+
+        if (is_a($type, AbstractTransfer::class, true)) {
+            $traitGenerator->addRegisteredArrayTransfer($reflectionProperty->getName(), $type);
+        }
+
         $traitGenerator
             ->getMethod('get' . ucfirst($reflectionProperty->getName()))
-            ?->setPhpDocReturnType("array<$arrayOf->type>");
+            ?->setPhpDocReturnType("array<$type>");
+    }
+
+    protected function createMethodGenerator(string $methodName, ArrayOf $instance): Method
+    {
+        return new Method($methodName, [$this->getTypeFromAttributeString($instance->type) . ' $v'], 'static');
     }
 }

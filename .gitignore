@@ -1,6 +1,6 @@
 vendor
-test/Generated
-test/DTO/*/Transfers/Generated
+tests/Generated
+tests/DTO/*/Transfers/Generated
 /.env
 /.env.*
 *.log

@@ -7,15 +7,18 @@ use ReflectionProperty;
 use ShveiderDto\Attributes\Validate;
 use ShveiderDto\ShveiderDtoExpanderPluginsInterface;
 use ShveiderDto\GenerateDTOConfig;
-use ShveiderDto\Model\Code\TraitGenerator;
+use ShveiderDto\Model\Code\DtoTrait;
 
+/**
+ * NOT IMPLEMENTED
+ */
 class ValidateShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPluginsInterface
 {
     public function expand(
-        ReflectionClass $reflectionClass,
+        ReflectionClass   $reflectionClass,
         GenerateDTOConfig $config,
-        TraitGenerator $traitGenerator
-    ): TraitGenerator {
+        DtoTrait          $traitGenerator
+    ): DtoTrait {
         $matches = [];
 
         foreach ($reflectionClass->getProperties() as $property) {
@@ -29,7 +32,7 @@ class ValidateShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPluginsInt
         return $traitGenerator;
     }
 
-    private function getRulesByProperty(ReflectionProperty $property, TraitGenerator $traitGenerator): string
+    private function getRulesByProperty(ReflectionProperty $property, DtoTrait $traitGenerator): string
     {
         /** @var \ShveiderDto\Attributes\Validate $instance */
         $instance = $property->getAttributes(Validate::class)[0];
@@ -41,7 +44,7 @@ class ValidateShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPluginsInt
         }
 
         if ($instance->minLength !== null) {
-            $rules[] = $property->getType()
+            $rules[] = $property->getType() === 'array'
                 ? 'count($v) >= ' . $instance->minLength
                 : 'strlen($v) >= ' . $instance->minLength;
         }

@@ -2,17 +2,21 @@
 
 namespace ShveiderDto\Command;
 
+use ReflectionClass;
+use ShveiderDto\AbstractTransfer;
 use ShveiderDto\GenerateDTOConfig;
-use ShveiderDto\Model\DtoGenerator;
+use ShveiderDto\Model\DtoTraitGenerator;
 use ShveiderDto\ShveiderDtoFactory;
 
 class GenerateDtoTraitsCommand
 {
-    protected DtoGenerator $dtoGenerator;
+    protected DtoTraitGenerator $dtoGenerator;
 
-    public function __construct(ShveiderDtoFactory $factory, protected readonly GenerateDTOConfig $config)
-    {
-        $this->dtoGenerator = $factory->createDtoGenerator();
+    public function __construct(
+        protected readonly ShveiderDtoFactory $factory,
+        protected readonly GenerateDTOConfig $config,
+    ) {
+        $this->dtoGenerator = $this->factory->createDtoGenerator();
     }
 
     /**
@@ -21,18 +25,9 @@ class GenerateDtoTraitsCommand
     public function execute(): void
     {
         $this->validate();
+        $this->checkWriteDir();
 
-        if (file_exists($this->config->getWriteTo())) {
-            if (PHP_OS === 'Windows') {
-                exec(sprintf("rd /s /q %s", escapeshellarg($this->config->getWriteTo())));
-            } else {
-                exec(sprintf("rm -rf %s", escapeshellarg($this->config->getWriteTo())));
-            }
-        }
-
-        $directories = glob($this->config->getReadFrom(), GLOB_NOSORT);
-
-        foreach ($directories as $directory) {
+        foreach (glob($this->config->getReadFrom(), GLOB_NOSORT) as $directory) {
             $filesInDir = scandir($directory);
 
             foreach ($filesInDir as $fileInDir) {
@@ -40,29 +35,35 @@ class GenerateDtoTraitsCommand
                     continue;
                 }
 
-                $traitFilePath = rtrim($directory, '/') . '/' . $fileInDir;
-                $fileContent = file_get_contents($traitFilePath);
+                $transferFilePath = rtrim($directory, '/') . '/' . $fileInDir;
+                $fileContent = file_get_contents($transferFilePath);
 
-                preg_match('/namespace (.*?);/i', $fileContent, $namespace);
-                preg_match('/class (.*?)[\s|\n]/i', $fileContent, $class);
+                $fullNameSpace = $this->getFullNamespace($fileContent);
 
-                if (!$namespace[1] || !$class[1]) {
+                if (!$fullNameSpace) {
                     continue;
                 }
 
-                $changed = $this->prepareTraitToRead($traitFilePath, $fileContent);
-
-                $fullNameSpace = '\\' . $namespace[1] . '\\' . $class[1];
+                $changed = $this->prepareTraitToRead($transferFilePath, $fileContent);
 
                 if (!class_exists($fullNameSpace)) {
+                    $changed && $this->backFileToPreviousState($transferFilePath, $fileContent);
+
                     continue;
                 }
 
-                $reflectionClass = new \ReflectionClass($fullNameSpace);
+                $reflectionClass = new ReflectionClass($fullNameSpace);
 
-                $this->dtoGenerator->generate($reflectionClass, $this->config, $directory);
+                if (!$this->isDataTransferObject($reflectionClass)) {
+                    $changed && $this->backFileToPreviousState($transferFilePath, $fileContent);
 
-                $changed && $this->backFileToPreviousState($traitFilePath, $fileContent);
+                    continue;
+                }
+
+                $traitGenerator = $this->factory->createTraitGenerator($this->getTraitName($reflectionClass));
+                $this->dtoGenerator->generate($reflectionClass, $this->config, $traitGenerator, $directory);
+
+                $changed && $this->backFileToPreviousState($transferFilePath, $fileContent);
             }
         }
     }
@@ -94,5 +95,51 @@ class GenerateDtoTraitsCommand
     protected function backFileToPreviousState(string $path, string $fileContent): void
     {
         file_put_contents($path, $fileContent);
+    }
+
+    protected function isDataTransferObject(ReflectionClass $reflectionClass): bool
+    {
+        $parent = $reflectionClass->getParentClass();
+
+        if (!$parent) {
+            return false;
+        }
+
+        if ($parent->getName() === AbstractTransfer::class) {
+            return true;
+        }
+
+        if (is_a($parent, ReflectionClass::class)) {
+            return $this->isDataTransferObject($parent);
+        }
+
+        return false;
+    }
+
+    protected function getTraitName(ReflectionClass $reflectionClass): string
+    {
+        return $reflectionClass->getShortName() . 'Trait';
+    }
+
+    protected function checkWriteDir(): void
+    {
+        if (file_exists($this->config->getWriteTo())) {
+            if (PHP_OS === 'Windows') {
+                exec(sprintf("rd /s /q %s", escapeshellarg($this->config->getWriteTo())));
+            } else {
+                exec(sprintf("rm -rf %s", escapeshellarg($this->config->getWriteTo())));
+            }
+        }
+    }
+
+    protected function getFullNamespace(string $fileContent): ?string
+    {
+        preg_match('/namespace (.*?);/i', $fileContent, $namespace);
+        preg_match('/class (.*?)[\s|\n]/i', $fileContent, $class);
+
+        return isset($namespace[1]) && $namespace[1] && isset($class[1]) && $class[1]
+            ? '\\' . $namespace[1] . '\\' . $class[1]
+            : null;
+
     }
 }

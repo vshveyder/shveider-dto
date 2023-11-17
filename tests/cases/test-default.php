@@ -1,23 +1,8 @@
 <?php
 
 use ShveiderDtoTest\DTO\Module1\Transfers\Test2Transfer;
+use ShveiderDtoTest\DTO\Module2\Transfers\AddressTransfer;
 use ShveiderDtoTest\DTO\Module2\Transfers\TestTransfer;
-
-require_once __DIR__ . '/../vendor/autoload.php';
-
-try {
-    (new \ShveiderDto\Command\GenerateDtoTraitsCommand(
-        new \ShveiderDto\ShveiderDtoFactory(),
-        new \ShveiderDto\GenerateDTOConfig(
-            __DIR__ . '/../test/DTO/*/Transfers',
-            minified: true,
-        ),
-    ))->execute();
-} catch (Exception $e) {
-    echo $e->getMessage();
-
-    die('execution filed');
-}
 
 $date1 = new DateTime();
 $test2Transfer = new Test2Transfer();
@@ -51,7 +36,7 @@ assert($test1Transfer->toArray() == []);
 assert($test1Transfer->modifiedToArray() == []);
 assert(array_diff($test1Transfer->modifiedToArray(), []) == []);
 
-$addressTransfer = new \ShveiderDtoTest\DTO\Module2\Transfers\AddressTransfer();
+$addressTransfer = new AddressTransfer();
 assert(array_diff(
     ['city' => null, 'country' => null, 'zip' => null, 'street' => null, 'streetNumber' => null],
     $addressTransfer->toArray(),
@@ -71,7 +56,7 @@ assert(array_diff($addressTransfer->modifiedToArray(), [
 ]) == []);
 assert(array_diff(['city' => 'Odessa', 'country' => 'Ukraine', 'zip' => null, 'street' => null, 'streetNumber' => null], $addressTransfer->toArray()) == []);
 
-$addressTransfer2 = new \ShveiderDtoTest\DTO\Module2\Transfers\AddressTransfer();
+$addressTransfer2 = new AddressTransfer();
 $addressTransfer2->fromArray($addressTransfer->modifiedToArray());
 assert(array_diff(['city' => 'Odessa', 'country' => 'Ukraine', 'zip' => null, 'street' => null, 'streetNumber' => null], $addressTransfer2->toArray()) == []);
 assert(array_diff($addressTransfer2->modifiedToArray(), [
@@ -79,7 +64,7 @@ assert(array_diff($addressTransfer2->modifiedToArray(), [
         'country' => 'Ukraine',
 ]) == []);
 
-$addressTransfer3 = new \ShveiderDtoTest\DTO\Module2\Transfers\AddressTransfer();
+$addressTransfer3 = new AddressTransfer();
 $addressTransfer3->fromArray($addressTransfer->toArray());
 assert(array_diff(['city' => 'Odessa', 'country' => 'Ukraine', 'zip' => null, 'street' => null, 'streetNumber' => null], $addressTransfer3->modifiedToArray()) == []);
 

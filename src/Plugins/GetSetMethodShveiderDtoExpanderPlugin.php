@@ -7,20 +7,20 @@ use ReflectionProperty;
 use ShveiderDto\ShveiderDtoExpanderPluginsInterface;
 use ShveiderDto\GenerateDTOConfig;
 use ShveiderDto\Helpers\GetTypeTrait;
-use ShveiderDto\Model\Code\MethodGenerator;
-use ShveiderDto\Model\Code\TraitGenerator;
+use ShveiderDto\Model\Code\Method;
+use ShveiderDto\Model\Code\DtoTrait;
 
 class GetSetMethodShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPluginsInterface
 {
     use GetTypeTrait;
 
     public function expand(
-        ReflectionClass $reflectionClass,
+        ReflectionClass   $reflectionClass,
         GenerateDTOConfig $config,
-        TraitGenerator $traitGenerator
-    ): TraitGenerator {
+        DtoTrait          $traitGenerator
+    ): DtoTrait {
         foreach ($reflectionClass->getProperties() as $property) {
-            if (in_array($property->getName(), ['modified', 'registered_vars'])) {
+            if (in_array($property->getName(), ['__modified', '__registered_vars', '__registered_transfers'])) {
                 continue;
             }
 
@@ -31,19 +31,19 @@ class GetSetMethodShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlugin
         return $traitGenerator;
     }
 
-    private function expandByPropertyGet(ReflectionProperty $reflectionProperty, TraitGenerator $traitGenerator): void
+    protected function expandByPropertyGet(ReflectionProperty $reflectionProperty, DtoTrait $traitGenerator): void
     {
         $propertyName = $reflectionProperty->getName();
         $methodName = 'get' . ucfirst($propertyName);
         $type = $this->getPhpType($reflectionProperty);
 
-        $methodGenerator = new MethodGenerator($methodName, [], $type);
+        $methodGenerator = $this->createMethodGenerator($methodName, $type);
         $methodGenerator->insertRaw("return \$this->$propertyName;");
 
         $traitGenerator->addMethod($methodName, $methodGenerator);
     }
 
-    private function expandByPropertySet(ReflectionProperty $reflectionProperty, TraitGenerator $traitGenerator): void
+    protected function expandByPropertySet(ReflectionProperty $reflectionProperty, DtoTrait $traitGenerator): void
     {
         if ($reflectionProperty->isReadOnly()) {
             return;
@@ -53,11 +53,16 @@ class GetSetMethodShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlugin
         $methodName = 'set' . ucfirst($propertyName);
         $type = $this->getPhpType($reflectionProperty);
 
-        $methodGenerator = new MethodGenerator($methodName, ["$type \$v"], 'static');
-        $methodGenerator->insertRaw("\$this->modified['$propertyName'] = true;");
+        $methodGenerator = new Method($methodName, ["$type \$v"], 'static');
+        $methodGenerator->insertRaw("\$this->__modified['$propertyName'] = true;");
         $methodGenerator->insertRaw("\$this->$propertyName = \$v;");
         $methodGenerator->insertRaw("return \$this;");
 
         $traitGenerator->addMethod($methodName, $methodGenerator);
+    }
+
+    protected function createMethodGenerator(string $methodName, string $type): Method
+    {
+        return new Method($methodName, [], $type);
     }
 }

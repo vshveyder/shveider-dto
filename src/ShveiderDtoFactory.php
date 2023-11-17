@@ -2,7 +2,9 @@
 
 namespace ShveiderDto;
 
-use ShveiderDto\Model\DtoGenerator;
+use ShveiderDto\Model\Code\DtoClass;
+use ShveiderDto\Model\Code\DtoTrait;
+use ShveiderDto\Model\DtoTraitGenerator;
 use ShveiderDto\Plugins\ArrayOfShveiderDtoExpanderPlugin;
 use ShveiderDto\Plugins\GetSetMethodShveiderDtoExpanderPlugin;
 use ShveiderDto\Plugins\RegisteredVarsShveiderDtoExpanderPlugin;
@@ -10,11 +12,21 @@ use ShveiderDto\Plugins\RegisteredVarsShveiderDtoExpanderPlugin;
 class ShveiderDtoFactory
 {
     /**
-     * @return \ShveiderDto\Model\DtoGenerator
+     * @return \ShveiderDto\Model\DtoTraitGenerator
      */
-    public function createDtoGenerator(): DtoGenerator
+    public function createDtoGenerator(): DtoTraitGenerator
     {
-        return new DtoGenerator($this->getExpanderPlugins());
+        return new DtoTraitGenerator($this->getExpanderPlugins());
+    }
+
+    public function createTraitGenerator(string $name): DtoTrait
+    {
+        return new DtoTrait($name);
+    }
+
+    public function createDtoClassGenerator(string $name): DtoClass
+    {
+        return new DtoClass($name);
     }
 
     /**

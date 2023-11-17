@@ -3,13 +3,13 @@
 namespace ShveiderDto;
 
 use ReflectionClass;
-use ShveiderDto\Model\Code\TraitGenerator;
+use ShveiderDto\Model\Code\DtoTrait;
 
 interface ShveiderDtoExpanderPluginsInterface
 {
     public function expand(
-        ReflectionClass $reflectionClass,
+        ReflectionClass   $reflectionClass,
         GenerateDTOConfig $config,
-        TraitGenerator $traitGenerator
-    ): TraitGenerator;
+        DtoTrait          $traitGenerator
+    ): DtoTrait;
 }

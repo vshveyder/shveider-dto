@@ -2,7 +2,7 @@
 
 namespace ShveiderDto\Model\Code;
 
-class MethodGenerator
+class Method
 {
     /** @var array<string> */
     protected array $body = [];
@@ -37,7 +37,7 @@ class MethodGenerator
         return $this;
     }
 
-    public function setMinified(bool $minified): MethodGenerator
+    public function setMinified(bool $minified): Method
     {
         $this->minified = $minified;
 
