@@ -12,7 +12,11 @@ trait GetTypeTrait
             $type = '\\' . $reflectionProperty->getType()->getName();
         }
 
-        if ($reflectionProperty->getType()->allowsNull()) {
+        if (interface_exists('\\' . $reflectionProperty->getType()->getName())) {
+            $type = '\\' . ltrim($reflectionProperty->getType()->getName(), '\\');
+        }
+
+        if ($reflectionProperty->getType()->allowsNull() && $reflectionProperty->getType()->getName() !== 'mixed') {
             $type = '?' . $type;
         }
 

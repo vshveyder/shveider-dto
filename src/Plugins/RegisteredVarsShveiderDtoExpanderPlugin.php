@@ -15,6 +15,10 @@ class RegisteredVarsShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlug
     public function expand(ReflectionClass $reflectionClass, GenerateDTOConfig $config, DtoTrait $traitGenerator): DtoTrait
     {
         foreach ($reflectionClass->getProperties() as $property) {
+            if ($property->isPrivate()) {
+                continue;
+            }
+
             if (in_array($property->getName(), $this->getSkippedProperties())) {
                 continue;
             }

@@ -1,0 +1,17 @@
+<?php
+
+namespace ShveiderDtoTest\DTO\Module1\Transfers;
+
+use ShveiderDto\AbstractTransfer;
+use ShveiderDto\Attributes\ArrayOf;
+use ShveiderDtoTest\DTO\Module1\Transfers\Generated\SomeCollectionTransferTrait;
+
+class SomeCollectionTransfer extends AbstractTransfer
+{
+    use SomeCollectionTransferTrait;
+    #[ArrayOf(SomeResourceTransfer::class, 'resource')]
+    protected array $resources = [];
+
+    #[ArrayOf('self')]
+    protected array $children = [];
+}

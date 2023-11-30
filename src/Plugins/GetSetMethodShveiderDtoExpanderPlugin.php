@@ -4,6 +4,7 @@ namespace ShveiderDto\Plugins;
 
 use ReflectionClass;
 use ReflectionProperty;
+use ShveiderDto\DataTransferObjectInterface;
 use ShveiderDto\ShveiderDtoExpanderPluginsInterface;
 use ShveiderDto\GenerateDTOConfig;
 use ShveiderDto\Helpers\GetTypeTrait;
@@ -20,7 +21,11 @@ class GetSetMethodShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlugin
         DtoTrait          $traitGenerator
     ): DtoTrait {
         foreach ($reflectionClass->getProperties() as $property) {
-            if (in_array($property->getName(), ['__modified', '__registered_vars', '__registered_transfers'])) {
+            if ($property->isPrivate()) {
+                continue;
+            }
+
+            if (in_array($property->getName(), $this->getSkippedProperties())) {
                 continue;
             }
 
@@ -64,5 +69,10 @@ class GetSetMethodShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlugin
     protected function createMethodGenerator(string $methodName, string $type): Method
     {
         return new Method($methodName, [], $type);
+    }
+
+    protected function getSkippedProperties(): array
+    {
+        return DataTransferObjectInterface::SKIPPED_PROPERTIES;
     }
 }

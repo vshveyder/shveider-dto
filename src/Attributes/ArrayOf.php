@@ -8,6 +8,7 @@ readonly class ArrayOf
     public function __construct(
         public string $type,
         public string $singular = '',
+        public bool $associative = false,
     ) {
     }
 }

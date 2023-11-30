@@ -103,12 +103,12 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
         return $vars;
     }
 
-    protected function arrayOfTransfersToArray(array $arrayValue): array
+    protected function arrayOfTransfersToArray(array $arrayValue, bool $recursive = false): array
     {
         $values = [];
 
         foreach ($arrayValue as $item) {
-            $values[] = $item && is_a($item, AbstractTransfer::class) ? $item->toArray() : $item;
+            $values[] = $item && is_a($item, AbstractTransfer::class) ? $item->toArray($recursive) : $item;
         }
 
         return $values;
@@ -117,7 +117,7 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
     protected function recursiveToArray(string $name, mixed $value): mixed
     {
         if (is_array($value) && isset($this->__registered_array_transfers[$name])) {
-            return $this->arrayOfTransfersToArray($value);
+            return $this->arrayOfTransfersToArray($value, true);
         }
 
         return $value && is_a($value, AbstractTransfer::class)

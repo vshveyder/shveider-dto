@@ -32,28 +32,65 @@ class ArrayOfShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPluginsInte
         return $traitGenerator;
     }
 
-    protected function expandByProperty(ReflectionProperty $reflectionProperty, DtoTrait $traitGenerator): void
+    protected function expandByProperty(ReflectionProperty $reflectionProperty, DtoTrait $dtoTrait): void
     {
         $attributes = $reflectionProperty->getAttributes(ArrayOf::class);
         $attribute = $attributes[0];
         /** @var \ShveiderDto\Attributes\ArrayOf $instance */
         $instance = $attribute->newInstance();
 
-        $this->expandGetAndSetMethods($reflectionProperty, $traitGenerator, $instance);
+        $this->expandGetAndSetMethods($reflectionProperty, $dtoTrait, $instance);
 
         if (!$instance->singular) {
             return;
         }
 
         $propertyName = $reflectionProperty->getName();
-        $methodName = 'add' . ucfirst($instance->singular);
 
-        $methodGenerator = $this->createMethodGenerator($methodName, $instance);
+        if (!$instance->associative) {
+            $this->addDefaultMethods($instance, $propertyName, $dtoTrait);
+
+            return;
+        }
+
+        $this->addAssociativeMethods($instance, $propertyName, $dtoTrait);
+    }
+
+    protected function addDefaultMethods(ArrayOf $instance, string $propertyName, DtoTrait $traitGenerator): void
+    {
+        $methodName = 'add' . ucfirst($instance->singular);
+        $methodGenerator = $this->createMethod($methodName, [$this->getTypeFromAttributeString($instance->type) . ' $v'], 'static');
         $methodGenerator->insertRaw("\$this->__modified['$propertyName'] = true;");
         $methodGenerator->insertRaw("\$this->{$propertyName}[] = \$v;");
         $methodGenerator->insertRaw("return \$this;");
 
         $traitGenerator->addMethod($methodName, $methodGenerator);
+    }
+
+    protected function addAssociativeMethods(ArrayOf $instance, string $propertyName, DtoTrait $dtoTrait): void
+    {
+        $singular = $instance->singular ? ucfirst($instance->singular) : 'One' . ucfirst($propertyName);
+
+        $methodName = 'add' . $singular;
+        $method = $this->createMethod($methodName, ['string $key', $this->getTypeFromAttributeString($instance->type) . ' $v'], 'static');
+        $method->insertRaw("\$this->__modified['$propertyName'] = true;");
+        $method->insertRaw("\$this->{$propertyName}[\$key] = \$v;");
+        $method->insertRaw("return \$this;");
+        $dtoTrait->addMethod($methodName, $method);
+
+        $getMethodName = 'get' . $singular;
+        $dtoTrait->addMethod(
+            $getMethodName,
+            $this->createMethod($getMethodName, ['string $key'], $this->getTypeFromAttributeString($instance->type))
+                ->insertRaw("return \$this->{$propertyName}[\$key];")
+        );
+
+        $hasMethodName = 'has' . $singular;
+        $dtoTrait->addMethod(
+            $hasMethodName,
+            $this->createMethod($hasMethodName, ['string $key'], 'bool')
+                ->insertRaw("return isset(\$this->{$propertyName}[\$key]);")
+        );
     }
 
     protected function expandGetAndSetMethods(ReflectionProperty $reflectionProperty, DtoTrait $traitGenerator, ArrayOf $arrayOf): void
@@ -64,13 +101,24 @@ class ArrayOfShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPluginsInte
             $traitGenerator->addRegisteredArrayTransfer($reflectionProperty->getName(), $type);
         }
 
+        if ($type === 'self') {
+            $traitGenerator->addRegisteredArrayTransfer($reflectionProperty->getName(), '\\' . ltrim($reflectionProperty->getDeclaringClass()->getName(), '\\'));
+        }
+
         $traitGenerator
             ->getMethod('get' . ucfirst($reflectionProperty->getName()))
             ?->setPhpDocReturnType("array<$type>");
     }
 
-    protected function createMethodGenerator(string $methodName, ArrayOf $instance): Method
+    /**
+     * @param string $methodName
+     * @param \ShveiderDto\Attributes\ArrayOf $instance
+     * @param array<string> $params
+     *
+     * @return \ShveiderDto\Model\Code\Method
+     */
+    protected function createMethod(string $methodName, array $params, string $returnType): Method
     {
-        return new Method($methodName, [$this->getTypeFromAttributeString($instance->type) . ' $v'], 'static');
+        return new Method($methodName, $params, $returnType);
     }
 }
