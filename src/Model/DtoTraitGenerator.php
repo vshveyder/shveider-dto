@@ -19,7 +19,8 @@ readonly class DtoTraitGenerator
         ReflectionClass $reflectionClass,
         GenerateDTOConfig $config,
         DtoTrait $trait,
-        string $directory
+        string $directory,
+        string $transferNamespace,
     ): void {
         foreach ($this->expanderPlugins as $expanderPlugin) {
             $trait = $expanderPlugin->expand($reflectionClass, $config, $trait);
@@ -28,7 +29,18 @@ readonly class DtoTraitGenerator
         $file = $this->resolveStorageAndReturnFilePath($config, $directory, $trait->getName());
 
         $trait->setMinified($config->isMinified());
-        $trait->setNamespace($this->getNamespace($reflectionClass, $config));
+        $trait->setNamespace($this->getNamespaceWithTransferClassNamespace($transferNamespace, $config));
+
+        file_exists($file) && unlink($file);
+        file_put_contents($file, $trait);
+    }
+
+    public function generateEmptyTrait(DtoTrait $trait, GenerateDTOConfig $config, string $transferDir, string $transferNamespace): void
+    {
+        $file = $this->resolveStorageAndReturnFilePath($config, $transferDir, $trait->getName());
+
+        $trait->setMinified($config->isMinified());
+        $trait->setNamespace($this->getNamespaceWithTransferClassNamespace($transferNamespace, $config));
 
         file_exists($file) && unlink($file);
         file_put_contents($file, $trait);
@@ -48,9 +60,9 @@ readonly class DtoTraitGenerator
         return rtrim($directory, '/') . '/' . $config->getDirNameForGeneratedFiles()  . '/' . $traitName . '.php';
     }
 
-    protected function getNamespace(ReflectionClass $reflectionClass, GenerateDTOConfig $config): string
+    protected function getNamespaceWithTransferClassNamespace(string $transferNamespace, GenerateDTOConfig $config): string
     {
         return $config->getWriteToNamespace()
-            ?: trim($reflectionClass->getNamespaceName(), '\\') . '\\' . $config->getDirNameForGeneratedFiles();
+            ?: trim($transferNamespace, '\\') . '\\' . $config->getDirNameForGeneratedFiles();
     }
 }

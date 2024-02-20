@@ -2,6 +2,7 @@
 
 namespace ShveiderDto\Command;
 
+use Generator;
 use ReflectionClass;
 use ShveiderDto\AbstractTransfer;
 use ShveiderDto\GenerateDTOConfig;
@@ -11,6 +12,14 @@ use ShveiderDto\ShveiderDtoFactory;
 class GenerateDtoTraitsCommand
 {
     protected DtoTraitGenerator $dtoGenerator;
+
+    protected const KEY_FILES_DIR = 'files_dir';
+
+    protected const KEY_DIR_NAMESPACE = 'dir_namespace';
+
+    protected const KEY_FULL_NAMESPACE = 'full_namespace';
+
+    protected const KEY_FILE_CONTENT = 'file_content';
 
     public function __construct(
         protected readonly ShveiderDtoFactory $factory,
@@ -27,10 +36,40 @@ class GenerateDtoTraitsCommand
         $this->validate();
         $this->checkWriteDir();
 
-        foreach (glob($this->config->getReadFrom(), GLOB_NOSORT) as $directory) {
-            $filesInDir = scandir($directory);
+        foreach ($this->getFilesGenerator() as $data) {
+            $directory = $data[static::KEY_FILES_DIR];
+            $fileContent = $data[static::KEY_FILE_CONTENT];
+            $dirNamespace = $data[static::KEY_DIR_NAMESPACE];
 
-            foreach ($filesInDir as $fileInDir) {
+            $emptyTraitGenerator = $this->factory->createTraitGenerator($this->getTraitName($fileContent));
+            $this->dtoGenerator->generateEmptyTrait($emptyTraitGenerator, $this->config, $directory, $dirNamespace);
+        }
+
+        foreach ($this->getFilesGenerator() as $data) {
+            $directory = $data[static::KEY_FILES_DIR];
+            $fileContent = $data[static::KEY_FILE_CONTENT];
+            $fullNameSpace = $data[static::KEY_FULL_NAMESPACE];
+            $dirNamespace = $data[static::KEY_DIR_NAMESPACE];
+
+            if (!class_exists($fullNameSpace)) {
+                continue;
+            }
+
+            $reflectionClass = new ReflectionClass($fullNameSpace);
+
+            if (!$this->isDataTransferObject($reflectionClass)) {
+                continue;
+            }
+
+            $traitGenerator = $this->factory->createTraitGenerator($this->getTraitName($fileContent));
+            $this->dtoGenerator->generate($reflectionClass, $this->config, $traitGenerator, $directory, $dirNamespace);
+        }
+    }
+
+    protected function getFilesGenerator(): Generator
+    {
+        foreach (glob($this->config->getReadFrom(), GLOB_NOSORT) as $directory) {
+            foreach (scandir($directory) as $fileInDir) {
                 if (!preg_match('/\.php/i', $fileInDir)) {
                     continue;
                 }
@@ -44,26 +83,12 @@ class GenerateDtoTraitsCommand
                     continue;
                 }
 
-                $changed = $this->prepareTraitToRead($transferFilePath, $fileContent);
-
-                if (!class_exists($fullNameSpace)) {
-                    $changed && $this->backFileToPreviousState($transferFilePath, $fileContent);
-
-                    continue;
-                }
-
-                $reflectionClass = new ReflectionClass($fullNameSpace);
-
-                if (!$this->isDataTransferObject($reflectionClass)) {
-                    $changed && $this->backFileToPreviousState($transferFilePath, $fileContent);
-
-                    continue;
-                }
-
-                $traitGenerator = $this->factory->createTraitGenerator($this->getTraitName($reflectionClass));
-                $this->dtoGenerator->generate($reflectionClass, $this->config, $traitGenerator, $directory);
-
-                $changed && $this->backFileToPreviousState($transferFilePath, $fileContent);
+                yield [
+                    static::KEY_FILES_DIR => $directory,
+                    static::KEY_FILE_CONTENT => $fileContent,
+                    static::KEY_FULL_NAMESPACE => $fullNameSpace,
+                    static::KEY_DIR_NAMESPACE => $this->getClassNamespaceFromFileContent($fileContent)
+                ];
             }
         }
     }
@@ -78,23 +103,6 @@ class GenerateDtoTraitsCommand
         if (!empty($this->config->getWriteTo()) && empty($this->config->getWriteToNamespace())) {
             throw new \Exception('WriteToNamespace should be specified if writeTo path is set.');
         }
-    }
-
-    protected function prepareTraitToRead(string $path, string $fileContent): bool
-    {
-        if (preg_match('/use (.*?)Trait;/i', $fileContent)) {
-            $file = preg_replace('/use (.*?)Trait;\n/i', '', $fileContent, 2);
-            file_put_contents($path, $file);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    protected function backFileToPreviousState(string $path, string $fileContent): void
-    {
-        file_put_contents($path, $fileContent);
     }
 
     protected function isDataTransferObject(ReflectionClass $reflectionClass): bool
@@ -116,9 +124,9 @@ class GenerateDtoTraitsCommand
         return false;
     }
 
-    protected function getTraitName(ReflectionClass $reflectionClass): string
+    protected function getTraitName(string $fileContent): string
     {
-        return $reflectionClass->getShortName() . 'Trait';
+        return $this->getClassNameFromFileContent($fileContent) . 'Trait';
     }
 
     protected function checkWriteDir(): void
@@ -132,14 +140,25 @@ class GenerateDtoTraitsCommand
         }
     }
 
-    protected function getFullNamespace(string $fileContent): ?string
+    protected function getClassNameFromFileContent(string $fileContent): ?string
     {
-        preg_match('/namespace (.*?);/i', $fileContent, $namespace);
         preg_match('/class (.*?)[\s|\n]/i', $fileContent, $class);
 
-        return isset($namespace[1]) && $namespace[1] && isset($class[1]) && $class[1]
-            ? '\\' . $namespace[1] . '\\' . $class[1]
-            : null;
+        return isset($class[1]) ? trim($class[1]) : null;
+    }
 
+    protected function getClassNamespaceFromFileContent(string $fileContent): ?string
+    {
+        preg_match('/namespace (.*?);/i', $fileContent, $namespace);
+
+        return isset($namespace[1]) ? trim($namespace[1]) : null;
+    }
+
+    protected function getFullNamespace(string $fileContent): ?string
+    {
+        $namespace = $this->getClassNamespaceFromFileContent($fileContent);
+        $class = $this->getClassNameFromFileContent($fileContent);
+
+        return $namespace && $class ? '\\' . $namespace . '\\' . $class : null;
     }
 }
