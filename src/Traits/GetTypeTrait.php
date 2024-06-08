@@ -1,6 +1,6 @@
 <?php
 
-namespace ShveiderDto\Helpers;
+namespace ShveiderDto\Traits;
 
 trait GetTypeTrait
 {

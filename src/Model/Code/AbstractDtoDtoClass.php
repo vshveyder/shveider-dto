@@ -17,6 +17,8 @@ abstract class AbstractDtoDtoClass implements DtoClassInterface
 
     protected array $registeredArrayTransfers = [];
 
+    protected array $registeredArrayObjects = [];
+
     public function __construct(protected readonly string $name)
     {
     }
@@ -73,6 +75,11 @@ abstract class AbstractDtoDtoClass implements DtoClassInterface
     public function getName(): string
     {
         return $this->name;
+    }
+
+    public function addRegisteredArrayObject(string $varName, string $registeredArrayObject): void
+    {
+        $this->registeredArrayObjects[$varName] = $registeredArrayObject;
     }
 
     protected function generateRegisteredVarsString(): string

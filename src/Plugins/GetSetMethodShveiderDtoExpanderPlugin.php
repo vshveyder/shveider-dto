@@ -5,11 +5,11 @@ namespace ShveiderDto\Plugins;
 use ReflectionClass;
 use ReflectionProperty;
 use ShveiderDto\DataTransferObjectInterface;
-use ShveiderDto\ShveiderDtoExpanderPluginsInterface;
 use ShveiderDto\GenerateDTOConfig;
-use ShveiderDto\Helpers\GetTypeTrait;
+use ShveiderDto\Model\Code\AbstractDtoDtoClass;
 use ShveiderDto\Model\Code\Method;
-use ShveiderDto\Model\Code\DtoTrait;
+use ShveiderDto\ShveiderDtoExpanderPluginsInterface;
+use ShveiderDto\Traits\GetTypeTrait;
 
 class GetSetMethodShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPluginsInterface
 {
@@ -18,8 +18,8 @@ class GetSetMethodShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlugin
     public function expand(
         ReflectionClass   $reflectionClass,
         GenerateDTOConfig $config,
-        DtoTrait          $traitGenerator
-    ): DtoTrait {
+        AbstractDtoDtoClass $traitGenerator
+    ): AbstractDtoDtoClass {
         foreach ($reflectionClass->getProperties() as $property) {
             if ($property->isPrivate()) {
                 continue;
@@ -36,7 +36,7 @@ class GetSetMethodShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlugin
         return $traitGenerator;
     }
 
-    protected function expandByPropertyGet(ReflectionProperty $reflectionProperty, DtoTrait $traitGenerator): void
+    protected function expandByPropertyGet(ReflectionProperty $reflectionProperty, AbstractDtoDtoClass $traitGenerator): void
     {
         $propertyName = $reflectionProperty->getName();
         $methodName = 'get' . ucfirst($propertyName);
@@ -48,7 +48,7 @@ class GetSetMethodShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlugin
         $traitGenerator->addMethod($methodName, $methodGenerator);
     }
 
-    protected function expandByPropertySet(ReflectionProperty $reflectionProperty, DtoTrait $traitGenerator): void
+    protected function expandByPropertySet(ReflectionProperty $reflectionProperty, AbstractDtoDtoClass $traitGenerator): void
     {
         if ($reflectionProperty->isReadOnly()) {
             return;

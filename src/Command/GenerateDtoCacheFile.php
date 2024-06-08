@@ -6,12 +6,12 @@ use ReflectionClass;
 use ShveiderDto\AbstractTransfer;
 use ShveiderDto\GenerateDTOConfig;
 use ShveiderDto\Helpers\DtoFilesReader;
-use ShveiderDto\Model\DtoTraitGenerator;
+use ShveiderDto\Model\DtoCacheFileGenerator;
 use ShveiderDto\ShveiderDtoFactory;
 
-class GenerateDtoTraitsCommand
+class GenerateDtoCacheFile
 {
-    protected DtoTraitGenerator $dtoGenerator;
+    protected DtoCacheFileGenerator $dtoCacheFileGenerator;
 
     protected DtoFilesReader $dtoFilesReader;
 
@@ -19,20 +19,13 @@ class GenerateDtoTraitsCommand
         protected readonly ShveiderDtoFactory $factory,
         protected readonly GenerateDTOConfig $config,
     ) {
-        $this->dtoGenerator = $this->factory->createDtoGenerator();
+        $this->dtoCacheFileGenerator = $this->factory->createDtoCacheFileGenerator();
         $this->dtoFilesReader = $this->factory->createDtoFilesReader();
     }
 
-    /** @throws \Exception */
     public function execute(): void
     {
         $this->validate();
-        $this->checkWriteDir();
-
-        foreach ($this->dtoFilesReader->getFilesGenerator($this->config) as $dtoFile) {
-            $emptyTraitGenerator = $this->factory->createDtoTrait($dtoFile->traitName);
-            $this->dtoGenerator->generateEmptyTrait($emptyTraitGenerator, $this->config, $dtoFile->filesDir, $dtoFile->dirNamespace);
-        }
 
         foreach ($this->dtoFilesReader->getFilesGenerator($this->config) as $dtoFile) {
             if (!class_exists($dtoFile->fullNamespace)) {
@@ -45,9 +38,12 @@ class GenerateDtoTraitsCommand
                 continue;
             }
 
-            $traitGenerator = $this->factory->createDtoTrait($dtoFile->traitName);
-            $this->dtoGenerator->generate($reflectionClass, $this->config, $traitGenerator, $dtoFile->filesDir, $dtoFile->dirNamespace);
+            $dtoCache = $this->factory->createDtoCache($dtoFile->traitName);
+            $dtoCache->setClass($dtoFile->fullNamespace);
+            $this->dtoCacheFileGenerator->generate($reflectionClass, $this->config, $dtoCache);
         }
+
+        $this->dtoCacheFileGenerator->save($this->config->getWriteTo(), $this->config->getWriteToNamespace());
     }
 
     /** @throws \Exception */
@@ -79,16 +75,5 @@ class GenerateDtoTraitsCommand
         }
 
         return false;
-    }
-
-    protected function checkWriteDir(): void
-    {
-        if (file_exists($this->config->getWriteTo())) {
-            if (PHP_OS === 'Windows') {
-                exec(sprintf("rd /s /q %s", escapeshellarg($this->config->getWriteTo())));
-            } else {
-                exec(sprintf("rm -rf %s", escapeshellarg($this->config->getWriteTo())));
-            }
-        }
     }
 }

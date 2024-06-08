@@ -95,4 +95,36 @@ abstract class AbstractReflectionTransfer implements DataTransferObjectInterface
     {
         return json_encode($this->toArray(true), $pretty ? JSON_PRETTY_PRINT : 0);
     }
+
+    public function validateVarsIsset(array $vars): array
+    {
+        $invalidated = [];
+
+        foreach ($this->__reflection->getProperties() as $property) {
+            if ($property->isStatic()) {
+                continue;
+            }
+
+            if ($property->getName() === '__reflection') {
+                continue;
+            }
+
+            if (in_array($property->getName(), static::SKIPPED_PROPERTIES)) {
+                continue;
+            }
+
+            if (in_array($property->getName(), $vars)) {
+                if (!$property->isInitialized($this)) {
+                    $invalidated[] = $property->getName();
+                    continue;
+                }
+
+                if ($property->getValue($this) === null) {
+                    $invalidated[] = $property->getName();
+                }
+            }
+        }
+
+        return $invalidated;
+    }
 }

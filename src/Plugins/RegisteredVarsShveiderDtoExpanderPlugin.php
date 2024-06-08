@@ -7,12 +7,13 @@ use ShveiderDto\AbstractReflectionTransfer;
 use ShveiderDto\AbstractTransfer;
 use ShveiderDto\DataTransferObjectInterface;
 use ShveiderDto\GenerateDTOConfig;
-use ShveiderDto\Model\Code\DtoTrait;
+use ShveiderDto\Model\Code\AbstractDtoDtoClass;
 use ShveiderDto\ShveiderDtoExpanderPluginsInterface;
+use ShveiderDto\SVTransfer;
 
 class RegisteredVarsShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPluginsInterface
 {
-    public function expand(ReflectionClass $reflectionClass, GenerateDTOConfig $config, DtoTrait $traitGenerator): DtoTrait
+    public function expand(ReflectionClass $reflectionClass, GenerateDTOConfig $config, AbstractDtoDtoClass $traitGenerator): AbstractDtoDtoClass
     {
         foreach ($reflectionClass->getProperties() as $property) {
             if ($property->isPrivate()) {
@@ -25,12 +26,20 @@ class RegisteredVarsShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlug
 
             $traitGenerator->addRegisteredVar($property->getName());
 
-            if (
-                class_exists('\\' . $property->getType()->getName()) &&
-                (get_parent_class('\\' . $property->getType()->getName()) === AbstractTransfer::class ||
-                get_parent_class('\\' . $property->getType()->getName()) === AbstractReflectionTransfer::class)
-            ) {
-                $traitGenerator->addRegisteredTransfer($property->getName(), '\\' . $property->getType()->getName());
+            if (!class_exists('\\' . $property->getType()->getName())) {
+                continue;
+            }
+
+            $parentClass = get_parent_class('\\' . $property->getType()->getName());
+
+            if (in_array($parentClass, [AbstractTransfer::class, AbstractReflectionTransfer::class, SVTransfer::class])) {
+                $traitGenerator
+                    ->addRegisteredTransfer($property->getName(), '\\' . $property->getType()->getName());
+            }
+
+            if ($parentClass === \ArrayObject::class || $property->getType()->getName() === \ArrayObject::class) {
+                $traitGenerator
+                    ->addRegisteredArrayObject($property->getName(), '\\' . $property->getType()->getName());
             }
         }
 

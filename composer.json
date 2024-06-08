@@ -2,6 +2,7 @@
     "name": "vitalii.shveider/shveider-dto",
     "type": "library",
     "license": "MIT",
+    "version": "1.0.4",
     "autoload": {
         "psr-4": {
             "ShveiderDto\\": "src/",

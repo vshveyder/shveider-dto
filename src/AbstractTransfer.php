@@ -2,6 +2,8 @@
 
 namespace ShveiderDto;
 
+use AllowDynamicProperties;
+
 /**
  * @property array<string> $__registered_vars
  * - Uses for mapping fields in helping methods. If not set - get_class_vars is used.
@@ -11,8 +13,12 @@ namespace ShveiderDto;
  *
  * @property array<string, string> $__registered_array_transfers
  * - Uses to determine which field is array of transfers. To map it correctly.
+ * *
+ * @property array<string, string> $__registered_ao
+ * - Uses to determine which field has ArrayObject type or parent class is ArrayObject of transfers. To map it correctly.
  *
  */
+#[AllowDynamicProperties]
 abstract class AbstractTransfer implements DataTransferObjectInterface
 {
     protected array $__modified = [];
@@ -24,27 +30,31 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
                 continue;
             }
 
-            $this->__modified[$name] = true;
+            $this->modify($name);
 
             if (is_array($data[$name])) {
-                if (isset($this->__registered_array_transfers[$name])) {
+                if ($this->hasRegisteredArrayTransfers($name)) {
                     $this->$name = $this->arrayTransfersFromArray($name, $data[$name]);
 
                     continue;
                 }
 
-                if (isset($this->__registered_transfers[$name])) {
-                    $this->$name = (new $this->__registered_transfers[$name])->fromArray($data[$name]);
+                if ($this->hasRegisteredTransfers($name)) {
+                    $this->$name = (new ($this->getRegisteredTransfers($name)))->fromArray($data[$name]);
 
                     continue;
                 }
 
-                if (method_exists($this, 'mapArrayTo' . ucfirst($name))) {
-                    $map = 'mapArrayTo' . ucfirst($name);
+                if ($this->hasArrayObjectType($name)) {
+                    if ($this->hasRegisteredArrayTransfers($name)) {
+                        $this->$name = new ($this->getArrayObjectType($name))(
+                            $this->arrayTransfersFromArray($name, $data[$name])
+                        );
 
-                    $this->$map($data[$name]);
+                        continue;
+                    }
 
-                    continue;
+                    $this->$name = new ($this->getArrayObjectType($name))($data[$name]);
                 }
             }
 
@@ -71,7 +81,7 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
         return json_encode($this->toArray(true), $pretty ? JSON_PRETTY_PRINT : 0);
     }
 
-    public function modifiedToArray(): array
+    public function modifiedToArray(bool $recursive = false): array
     {
         $result = [];
 
@@ -80,16 +90,21 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
                 continue;
             }
 
-            $result[$name] = $this->$name;
+            $result[$name] = $recursive ? $this->recursiveToArray($name, $this->$name) : $this->$name;
         }
 
         return $result;
     }
 
+    public function validateVarsIsset(array $vars): array
+    {
+        return array_filter(array_intersect($this->getClassVars(), $vars), fn ($name) => !isset($this->$name));
+    }
+
     protected function getClassVars(): array
     {
-        if (isset($this->__registered_vars)) {
-            return $this->__registered_vars;
+        if ($this->hasRegisteredVars()) {
+            return $this->getRegisteredVars();
         }
 
         $vars = [];
@@ -100,7 +115,7 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
             }
         }
 
-        return $vars;
+        return $this->__registered_vars = $vars;
     }
 
     protected function arrayOfTransfersToArray(array $arrayValue, bool $recursive = false): array
@@ -108,7 +123,7 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
         $values = [];
 
         foreach ($arrayValue as $item) {
-            $values[] = $item && is_a($item, AbstractTransfer::class) ? $item->toArray($recursive) : $item;
+            $values[] = $item && is_a($item, DataTransferObjectInterface::class) ? $item->toArray($recursive) : $item;
         }
 
         return $values;
@@ -116,26 +131,71 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
 
     protected function recursiveToArray(string $name, mixed $value): mixed
     {
-        if (is_array($value) && isset($this->__registered_array_transfers[$name])) {
+        if (is_array($value) && $this->hasRegisteredArrayTransfers($name)) {
             return $this->arrayOfTransfersToArray($value, true);
         }
 
-        return $value && is_a($value, AbstractTransfer::class)
+        return $value && is_a($value, DataTransferObjectInterface::class)
             ? $value->toArray()
             : $value;
     }
 
     protected function arrayTransfersFromArray(string $name, array $arrayValues): array
     {
-        $transfer = $this->__registered_array_transfers[$name];
+        $transfer = $this->getRegisteredArrayTransfers($name);
         $values = [];
 
         foreach ($arrayValues as $arrayValue) {
-            $values[] = is_array($arrayValue)
-                ? (new $transfer)->fromArray($arrayValue)
-                : $arrayValue;
+            $values[] = is_array($arrayValue) ? (new $transfer)->fromArray($arrayValue) : $arrayValue;
         }
 
         return $values;
+    }
+
+    protected function modify(string $name): static
+    {
+        $this->__modified[$name] = true;
+
+        return $this;
+    }
+
+    protected function hasRegisteredArrayTransfers(string $name): bool
+    {
+        return isset($this->__registered_array_transfers[$name]);
+    }
+
+    protected function getRegisteredArrayTransfers(string $name): string
+    {
+        return $this->__registered_array_transfers[$name];
+    }
+
+    protected function hasRegisteredTransfers(string $name): bool
+    {
+        return isset($this->__registered_transfers[$name]);
+    }
+
+    protected function hasArrayObjectType($name): bool
+    {
+        return isset($this->__registered_ao[$name]);
+    }
+
+    protected function getArrayObjectType($name): string
+    {
+        return $this->__registered_ao[$name];
+    }
+
+    protected function getRegisteredTransfers(string $name): string
+    {
+        return $this->__registered_transfers[$name];
+    }
+
+    protected function hasRegisteredVars(): bool
+    {
+        return isset($this->__registered_vars);
+    }
+
+    protected function getRegisteredVars(): array
+    {
+        return $this->__registered_vars;
     }
 }
