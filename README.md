@@ -6,8 +6,8 @@ This Library helps to manage your DTO classes.
 ### There is several ways to use.
 - [Create your DTO and just use GenerateDtoTraitsCommand.php to generate getters and setters.](docs/USING_TRAITS.md)
 - [Create your DTO and extend AbstractReflectionTransfer.](docs/USING_REFLECTION.md)
-- Create your DTO and extend AbstractTransfer. But with several configurations inside your DTO.
-- Create your DTO and extend AbstractTransfer. And use GenerateDtoTraitsCommand.php to generate trait that adds getters/setters/configs to your DTO.
+- [Create your DTO and extend AbstractTransfer. But with several configurations inside your DTO.](docs/MANUALLY_CONFIGURED_TRANSFER.md)
+- [Use optimized cache for your transfer.](docs/USE_CACHE_GENERATOR.md)
 
 Also, you can configure your DTO using attributes in `\ShveiderDto\Attributes\\` namespace.
 
