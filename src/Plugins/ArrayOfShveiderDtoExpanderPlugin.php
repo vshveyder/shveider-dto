@@ -7,7 +7,7 @@ use ReflectionProperty;
 use ShveiderDto\AbstractTransfer;
 use ShveiderDto\Attributes\ArrayOf;
 use ShveiderDto\GenerateDTOConfig;
-use ShveiderDto\Model\Code\AbstractDtoDtoClass;
+use ShveiderDto\Model\Code\AbstractDtoClass;
 use ShveiderDto\Model\Code\Method;
 use ShveiderDto\ShveiderDtoExpanderPluginsInterface;
 use ShveiderDto\Traits\GetTypeTrait;
@@ -19,20 +19,20 @@ class ArrayOfShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPluginsInte
     public function expand(
         ReflectionClass   $reflectionClass,
         GenerateDTOConfig $config,
-        AbstractDtoDtoClass $traitGenerator
-    ): AbstractDtoDtoClass {
+        AbstractDtoClass  $abstractDtoObject
+    ): AbstractDtoClass {
         foreach ($reflectionClass->getProperties() as $property) {
             $attributes = $property->getAttributes(ArrayOf::class);
 
             if (!empty($attributes)) {
-                $this->expandByProperty($property, $traitGenerator);
+                $this->expandByProperty($property, $abstractDtoObject);
             }
         }
 
-        return $traitGenerator;
+        return $abstractDtoObject;
     }
 
-    protected function expandByProperty(ReflectionProperty $reflectionProperty, AbstractDtoDtoClass $dtoTrait): void
+    protected function expandByProperty(ReflectionProperty $reflectionProperty, AbstractDtoClass $dtoTrait): void
     {
         $attributes = $reflectionProperty->getAttributes(ArrayOf::class);
         $attribute = $attributes[0];
@@ -56,7 +56,7 @@ class ArrayOfShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPluginsInte
         $this->addAssociativeMethods($instance, $propertyName, $dtoTrait);
     }
 
-    protected function addDefaultMethods(ArrayOf $instance, string $propertyName, AbstractDtoDtoClass $traitGenerator): void
+    protected function addDefaultMethods(ArrayOf $instance, string $propertyName, AbstractDtoClass $traitGenerator): void
     {
         $methodName = 'add' . ucfirst($instance->singular);
         $methodGenerator = $this->createMethod($methodName, [$this->getTypeFromAttributeString($instance->type) . ' $v'], 'static');
@@ -67,7 +67,7 @@ class ArrayOfShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPluginsInte
         $traitGenerator->addMethod($methodName, $methodGenerator);
     }
 
-    protected function addAssociativeMethods(ArrayOf $instance, string $propertyName, AbstractDtoDtoClass $dtoTrait): void
+    protected function addAssociativeMethods(ArrayOf $instance, string $propertyName, AbstractDtoClass $dtoTrait): void
     {
         $singular = $instance->singular ? ucfirst($instance->singular) : 'One' . ucfirst($propertyName);
 
@@ -93,16 +93,16 @@ class ArrayOfShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPluginsInte
         );
     }
 
-    protected function expandGetAndSetMethods(ReflectionProperty $reflectionProperty, AbstractDtoDtoClass $traitGenerator, ArrayOf $arrayOf): void
+    protected function expandGetAndSetMethods(ReflectionProperty $reflectionProperty, AbstractDtoClass $traitGenerator, ArrayOf $arrayOf): void
     {
         $type = $this->getTypeFromAttributeString($arrayOf->type);
 
         if (is_a($type, AbstractTransfer::class, true)) {
-            $traitGenerator->addRegisteredArrayTransfer($reflectionProperty->getName(), $type);
+            $traitGenerator->addRegisteredArrayTransfer($reflectionProperty->getName(), ltrim($type, '\\'));
         }
 
         if ($type === 'self') {
-            $traitGenerator->addRegisteredArrayTransfer($reflectionProperty->getName(), '\\' . ltrim($reflectionProperty->getDeclaringClass()->getName(), '\\'));
+            $traitGenerator->addRegisteredArrayTransfer($reflectionProperty->getName(), ltrim($reflectionProperty->getDeclaringClass()->getName(), '\\'));
         }
 
         $traitGenerator

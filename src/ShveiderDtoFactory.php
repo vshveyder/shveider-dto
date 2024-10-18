@@ -3,7 +3,7 @@
 namespace ShveiderDto;
 
 use ShveiderDto\Helpers\DtoFilesReader;
-use ShveiderDto\Model\Code\DtoCache;
+use ShveiderDto\Model\Code\Cache;
 use ShveiderDto\Model\Code\DtoClass;
 use ShveiderDto\Model\Code\DtoTrait;
 use ShveiderDto\Model\DtoCacheFileGenerator;
@@ -11,6 +11,8 @@ use ShveiderDto\Model\DtoTraitGenerator;
 use ShveiderDto\Plugins\ArrayOfShveiderDtoExpanderPlugin;
 use ShveiderDto\Plugins\GetSetMethodShveiderDtoExpanderPlugin;
 use ShveiderDto\Plugins\RegisteredVarsShveiderDtoExpanderPlugin;
+use ShveiderDto\Plugins\TransferCacheDtoExpanderPlugin;
+use ShveiderDto\Plugins\TransferWithConstructDtoExpanderPlugin;
 
 class ShveiderDtoFactory
 {
@@ -37,9 +39,9 @@ class ShveiderDtoFactory
         return new DtoTrait($name);
     }
 
-    public function createDtoCache(string $name): DtoCache
+    public function createDtoCache(string $name): Cache
     {
-        return new DtoCache($name);
+        return new Cache($name);
     }
 
     public function createDtoClassGenerator(string $name): DtoClass
@@ -53,9 +55,11 @@ class ShveiderDtoFactory
     public function getExpanderPlugins(): array
     {
         return [
-            'GetSetMethodExpander' => new GetSetMethodShveiderDtoExpanderPlugin(),
-            'ArrayOfExpander' => new ArrayOfShveiderDtoExpanderPlugin(),
-            'RegisteredVars' => new RegisteredVarsShveiderDtoExpanderPlugin(),
+            GetSetMethodShveiderDtoExpanderPlugin::class => new GetSetMethodShveiderDtoExpanderPlugin(),
+            ArrayOfShveiderDtoExpanderPlugin::class => new ArrayOfShveiderDtoExpanderPlugin(),
+            RegisteredVarsShveiderDtoExpanderPlugin::class => new RegisteredVarsShveiderDtoExpanderPlugin(),
+            TransferWithConstructDtoExpanderPlugin::class => new TransferWithConstructDtoExpanderPlugin(),
+            TransferCacheDtoExpanderPlugin::class => new TransferCacheDtoExpanderPlugin(),
         ];
     }
 }

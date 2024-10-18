@@ -2,33 +2,26 @@
 
 namespace ShveiderDto\Model\Code;
 
-use ShveiderDto\AbstractTransfer;
+use ShveiderDto\AbstractConfigurableTransfer;
 
-class DtoClass extends AbstractDtoDtoClass
+class DtoClass extends DtoTrait
 {
-    protected array $properties = [];
-
-    public function addProperty(string $name, string $type): static
-    {
-        $this->properties[$name] = $type;
-
-        return $this;
-    }
-
     public function __toString(): string
     {
         $methodsString = $this->generateMethodsString();
         $registeredVarsString = $this->generateRegisteredVarsString();
         $registeredTransfersString = $this->generateRegisteredTransfers();
         $registeredArrayTransfersString = $this->generateRegisteredArrayTransfers();
+        $registeredValuesWithConstructString = $this->generateRegisteredValueWithConstructString();
 
         $php = "<?php\n\n";
         $namespace = "namespace $this->namespace;\n\n";
-        $use = "use \\" . AbstractTransfer::class . ";\n\n";
+        $use = "use \\" . AbstractConfigurableTransfer::class . ";\n\n";
         $classBody = implode("\n\n", [
             $registeredVarsString,
             $registeredTransfersString,
             $registeredArrayTransfersString,
+            $registeredValuesWithConstructString,
             $methodsString,
         ]);
         $class = "$this->name extends AbstractTransfer\n{\n$classBody\n}\n";

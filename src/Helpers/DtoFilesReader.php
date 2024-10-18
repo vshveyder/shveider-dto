@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace ShveiderDto\Helpers;
 
@@ -28,7 +28,7 @@ class DtoFilesReader
                 yield new DtoFile(
                     $directory,
                     $fileContent,
-                    $fullNameSpace,
+                    base64_encode($fullNameSpace),
                     $this->getClassNamespaceFromFileContent($fileContent),
                     $this->getTraitName($fileContent),
                 );

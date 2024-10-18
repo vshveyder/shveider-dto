@@ -1,64 +1,27 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace ShveiderDto;
 
-use AllowDynamicProperties;
+use ShveiderDto\Helpers\ArrayHelper;
 
-/**
- * @property array<string> $__registered_vars
- * - Uses for mapping fields in helping methods. If not set - get_class_vars is used.
- *
- * @property array<string, string> $__registered_transfers
- * - Uses to determine which field is transfer. To map it correctly.
- *
- * @property array<string, string> $__registered_array_transfers
- * - Uses to determine which field is array of transfers. To map it correctly.
- * *
- * @property array<string, string> $__registered_ao
- * - Uses to determine which field has ArrayObject type or parent class is ArrayObject of transfers. To map it correctly.
- *
- */
-#[AllowDynamicProperties]
 abstract class AbstractTransfer implements DataTransferObjectInterface
 {
+    protected const SHARED_SKIPPED_PROPERTIES = [
+        '__modified' => 0,
+        '__private_registered_vars' => 1,
+    ];
+
     protected array $__modified = [];
+
+    private array $__private_registered_vars;
 
     public function fromArray(array $data): static
     {
         foreach ($this->getClassVars() as $name) {
-            if (!array_key_exists($name, $data)) {
-                continue;
+            if (array_key_exists($name, $data)) {
+                $this->modify($name)->$name =
+                    is_array($data[$name]) ? $this->getValueFromArray($data[$name], $name) : $data[$name];
             }
-
-            $this->modify($name);
-
-            if (is_array($data[$name])) {
-                if ($this->hasRegisteredArrayTransfers($name)) {
-                    $this->$name = $this->arrayTransfersFromArray($name, $data[$name]);
-
-                    continue;
-                }
-
-                if ($this->hasRegisteredTransfers($name)) {
-                    $this->$name = (new ($this->getRegisteredTransfers($name)))->fromArray($data[$name]);
-
-                    continue;
-                }
-
-                if ($this->hasArrayObjectType($name)) {
-                    if ($this->hasRegisteredArrayTransfers($name)) {
-                        $this->$name = new ($this->getArrayObjectType($name))(
-                            $this->arrayTransfersFromArray($name, $data[$name])
-                        );
-
-                        continue;
-                    }
-
-                    $this->$name = new ($this->getArrayObjectType($name))($data[$name]);
-                }
-            }
-
-            $this->$name = $data[$name];
         }
 
         return $this;
@@ -66,11 +29,19 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
 
     public function toArray(bool $recursive = false): array
     {
+        return array_reduce($this->getClassVars(), function (array $v, string $name) use ($recursive) {
+            $v[$name] = $recursive ? $this->recursiveToArray($name, $this->$name ?? null) : ($this->$name ?? null);
+
+            return $v;
+        }, []);
+    }
+
+    public function modifiedToArray(bool $recursive = false): array
+    {
         $result = [];
 
-        foreach ($this->getClassVars() as $name) {
-            $value = $this->$name ?? null;
-            $result[$name] = $recursive ? $this->recursiveToArray($name, $value) : $value;
+        foreach ($this->__modified as $name => $_) {
+            $result[$name] = $recursive ? $this->recursiveToArray($name, $this->$name) : $this->$name;
         }
 
         return $result;
@@ -81,41 +52,45 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
         return json_encode($this->toArray(true), $pretty ? JSON_PRETTY_PRINT : 0);
     }
 
-    public function modifiedToArray(bool $recursive = false): array
+    protected function getValueFromArray(array $dataItem, string $name): mixed
     {
-        $result = [];
-
-        foreach ($this->__modified as $name => $isModified) {
-            if ($isModified === false) {
-                continue;
-            }
-
-            $result[$name] = $recursive ? $this->recursiveToArray($name, $this->$name) : $this->$name;
+        if ($transfer = $this->findRegisteredTransfer($name)) {
+            return $this->hasRegisteredValueWithConstruct($name)
+                ? (new $transfer(...ArrayHelper::shiftMulti($dataItem, $this->getRegisteredValueWithConstruct($name))))
+                    ->fromArray($dataItem)
+                : (new $transfer())->fromArray($dataItem);
         }
 
-        return $result;
+        if ($this->hasRegisteredValueWithConstruct($name)) {
+            $set = $this->getRegisteredValueWithConstruct($name);
+            $obj = array_shift($set);
+
+            return (new $obj(...ArrayHelper::shiftMulti($dataItem, $set)));
+        }
+
+        return $this->hasRegisteredArrayTransfers($name) ? $this->arrayTransfersFromArray($name, $dataItem) : $dataItem;
     }
 
-    public function validateVarsIsset(array $vars): array
-    {
-        return array_filter(array_intersect($this->getClassVars(), $vars), fn ($name) => !isset($this->$name));
-    }
-
+    /** @return array<string> */
     protected function getClassVars(): array
     {
-        if ($this->hasRegisteredVars()) {
-            return $this->getRegisteredVars();
+        if (isset($this->__private_registered_vars)) {
+            return $this->__private_registered_vars;
+        }
+
+        if ($vars = $this->findRegisteredVars()) {
+            return $this->__private_registered_vars = $vars;
         }
 
         $vars = [];
 
         foreach (get_class_vars(static::class) as $name => $_) {
-            if (!in_array($name, static::SKIPPED_PROPERTIES)) {
+            if (!isset(static::SHARED_SKIPPED_PROPERTIES[$name])) {
                 $vars[] = $name;
             }
         }
 
-        return $this->__registered_vars = $vars;
+        return $this->__private_registered_vars = $vars;
     }
 
     protected function arrayOfTransfersToArray(array $arrayValue, bool $recursive = false): array
@@ -135,14 +110,12 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
             return $this->arrayOfTransfersToArray($value, true);
         }
 
-        return $value && is_a($value, DataTransferObjectInterface::class)
-            ? $value->toArray()
-            : $value;
+        return $value && is_a($value, DataTransferObjectInterface::class) ? $value->toArray(true) : $value;
     }
 
     protected function arrayTransfersFromArray(string $name, array $arrayValues): array
     {
-        $transfer = $this->getRegisteredArrayTransfers($name);
+        $transfer = $this->getRegisteredArrayTransfer($name);
         $values = [];
 
         foreach ($arrayValues as $arrayValue) {
@@ -159,43 +132,20 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
         return $this;
     }
 
-    protected function hasRegisteredArrayTransfers(string $name): bool
-    {
-        return isset($this->__registered_array_transfers[$name]);
-    }
+    abstract protected function hasRegisteredArrayTransfers(string $name): bool;
 
-    protected function getRegisteredArrayTransfers(string $name): string
-    {
-        return $this->__registered_array_transfers[$name];
-    }
+    abstract protected function getRegisteredArrayTransfer(string $name): string;
 
-    protected function hasRegisteredTransfers(string $name): bool
-    {
-        return isset($this->__registered_transfers[$name]);
-    }
+    abstract protected function hasRegisteredValueWithConstruct(string $name): bool;
 
-    protected function hasArrayObjectType($name): bool
-    {
-        return isset($this->__registered_ao[$name]);
-    }
+    abstract protected function getRegisteredValueWithConstruct(string $name): array;
 
-    protected function getArrayObjectType($name): string
-    {
-        return $this->__registered_ao[$name];
-    }
+    /**
+     * @param string $name
+     *
+     * @return class-string<\ShveiderDto\AbstractTransfer>|null
+     */
+    abstract protected function findRegisteredTransfer(string $name): ?string;
 
-    protected function getRegisteredTransfers(string $name): string
-    {
-        return $this->__registered_transfers[$name];
-    }
-
-    protected function hasRegisteredVars(): bool
-    {
-        return isset($this->__registered_vars);
-    }
-
-    protected function getRegisteredVars(): array
-    {
-        return $this->__registered_vars;
-    }
+    abstract protected function findRegisteredVars(): ?array;
 }

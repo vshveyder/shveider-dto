@@ -1,10 +1,12 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace ShveiderDto\Traits;
 
+use ReflectionProperty;
+
 trait GetTypeTrait
 {
-    public function getPhpType(\ReflectionProperty $reflectionProperty): string
+    public function getPhpType(ReflectionProperty $reflectionProperty): string
     {
         $type = $reflectionProperty->getType()->getName();
 

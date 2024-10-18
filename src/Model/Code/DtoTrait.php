@@ -1,8 +1,8 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace ShveiderDto\Model\Code;
 
-class DtoTrait extends AbstractDtoDtoClass
+class DtoTrait extends AbstractDtoClass
 {
     public function __toString(): string
     {
@@ -12,12 +12,50 @@ class DtoTrait extends AbstractDtoDtoClass
         $registeredVarsString = $this->generateRegisteredVarsString();
         $registeredTransfersString = $this->generateRegisteredTransfers();
         $registeredArrayTransfersString = $this->generateRegisteredArrayTransfers();
+        $registeredValuesWithConstructString = $this->generateRegisteredValueWithConstructString();
 
         $php = "<?php\n\n";
         $namespace = "namespace $this->namespace;\n\n";
-        $traitBody = "$registeredVarsString\n\n$registeredTransfersString\n\n$registeredArrayTransfersString\n\n$methodsString";
+        $traitBody = "$registeredVarsString\n\n$registeredTransfersString\n\n$registeredArrayTransfersString\n\n$registeredValuesWithConstructString\n\n$methodsString";
 
         return "$php$namespace$traitDoc\ntrait $this->name\n{\n$traitBody\n}\n";
     }
 
+    protected function generateRegisteredVarsString(): string
+    {
+        $list = $this->mapArrayToString($this->registeredVars, fn ($key, $var) => "'$var'");
+
+        return "\tprotected array \$__registered_vars = [$list];";
+    }
+
+    protected function generateRegisteredValueWithConstructString(): string
+    {
+        $list = $this->mapArrayToString(
+            $this->registeredValuesWithConstruct,
+            fn ($name, $values) => "'$name'=>['" . implode("','", $values) . "']",
+        );
+
+        return "\tprotected array \$__registered_values_with_construct = [$list];";
+    }
+
+    protected function generateRegisteredTransfers(): string
+    {
+        $registeredTransfersList = $this
+            ->mapArrayToString($this->registeredTransfers, fn ($name, $namespace) => "'$name' => '$namespace'");
+
+        return "\tprotected array \$__registered_transfers = [$registeredTransfersList];";
+    }
+
+    protected function generateRegisteredArrayTransfers(): string
+    {
+        $registeredArrayTransfersList = $this
+            ->mapArrayToString($this->registeredArrayTransfers, fn ($name, $namespace) => "'$name' => '$namespace'");
+
+        return "\tprotected array \$__registered_array_transfers = [$registeredArrayTransfersList];";
+    }
+
+    protected function generateMethodsString(): string
+    {
+        return implode($this->minified ? PHP_EOL : PHP_EOL . PHP_EOL, $this->methods);
+    }
 }

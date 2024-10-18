@@ -1,8 +1,8 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace ShveiderDto\Model\Code;
 
-abstract class AbstractDtoDtoClass implements DtoClassInterface
+abstract class AbstractDtoClass implements DtoClassInterface
 {
     /** @var array<\ShveiderDto\Model\Code\Method> */
     protected array $methods = [];
@@ -18,6 +18,10 @@ abstract class AbstractDtoDtoClass implements DtoClassInterface
     protected array $registeredArrayTransfers = [];
 
     protected array $registeredArrayObjects = [];
+
+    protected array $registeredValuesWithConstruct = [];
+
+    protected string $cacheClass;
 
     public function __construct(protected readonly string $name)
     {
@@ -72,6 +76,13 @@ abstract class AbstractDtoDtoClass implements DtoClassInterface
         return $this;
     }
 
+    public function addRegisteredValueWithConstruct(string $varName, array $values): static
+    {
+        $this->registeredValuesWithConstruct[$varName] = $values;
+
+        return $this;
+    }
+
     public function getName(): string
     {
         return $this->name;
@@ -82,47 +93,24 @@ abstract class AbstractDtoDtoClass implements DtoClassInterface
         $this->registeredArrayObjects[$varName] = $registeredArrayObject;
     }
 
-    protected function generateRegisteredVarsString(): string
+    public function getCacheClass(): ?string
     {
-        $registeredVarsList = count($this->registeredVars)
-            ? "'" . implode("', '", $this->registeredVars) . "'"
-            : '';
-
-        return "\tprotected array \$__registered_vars = [$registeredVarsList];";
+        return $this->cacheClass ?? null;
     }
 
-    protected function generateRegisteredTransfers(): string
+    public function setCacheClass(string $cacheClass): void
     {
-        $registeredTransfersList = [];
+        $this->cacheClass = $cacheClass;
+    }
 
-        foreach ($this->registeredTransfers as $propertyName => $registeredTransferFullNamespace) {
-            $registeredTransfersList[] = "'$propertyName' => '$registeredTransferFullNamespace'";
+    protected function mapArrayToString(array $array, callable $mapCallback): string
+    {
+        $list = [];
+
+        foreach ($array as $propertyName => $v) {
+            $list[] = $mapCallback($propertyName, $v);
         }
 
-        $registeredTransfersList = count($registeredTransfersList)
-            ? implode(',', $registeredTransfersList)
-            : '';
-
-        return "\tprotected array \$__registered_transfers = [$registeredTransfersList];";
-    }
-
-    protected function generateRegisteredArrayTransfers(): string
-    {
-        $registeredArrayTransfersList = [];
-
-        foreach ($this->registeredArrayTransfers as $propertyName => $registeredArrayTransferFullNamespace) {
-            $registeredArrayTransfersList[] = "'$propertyName' => '$registeredArrayTransferFullNamespace'";
-        }
-
-        $registeredArrayTransfersList = count($registeredArrayTransfersList)
-            ? implode(',', $registeredArrayTransfersList)
-            : '';
-
-        return "\tprotected array \$__registered_array_transfers = [$registeredArrayTransfersList];";
-    }
-
-    protected function generateMethodsString(): string
-    {
-        return implode($this->minified ? PHP_EOL : PHP_EOL . PHP_EOL, $this->methods);
+        return implode(', ', $list);
     }
 }

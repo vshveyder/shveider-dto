@@ -2,10 +2,10 @@
 
 namespace ShveiderDtoTest\DTO\Module2\Transfers;
 
-use ShveiderDto\AbstractTransfer;
+use ShveiderDto\AbstractConfigurableTransfer;
 use ShveiderDtoTest\DTO\Module2\Transfers\Generated\UserTransferTrait;
 
-class UserTransfer extends AbstractTransfer
+class UserTransfer extends AbstractConfigurableTransfer
 {
     use UserTransferTrait;
 

@@ -3,11 +3,11 @@
 namespace ShveiderDtoTest\DTO\Module3\Transfers;
 
 use DateTime;
-use ShveiderDto\AbstractTransfer;
+use ShveiderDto\AbstractConfigurableTransfer;
 use ShveiderDto\Attributes\ArrayOf;
 use ShveiderDtoTest\DTO\Module3\Transfers\Generated\UserCollectionTransferTrait;
 
-class UserCollectionTransfer extends AbstractTransfer
+class UserCollectionTransfer extends AbstractConfigurableTransfer
 {
     use UserCollectionTransferTrait;
 

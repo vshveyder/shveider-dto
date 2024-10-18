@@ -1,107 +1,176 @@
-# PHP Data Transfer Object
-***
+# DTO Library Documentation
 
-This Library helps to manage your DTO classes.
+This library provides various implementations of Data Transfer Objects (DTOs) that can be used to facilitate the transfer of data between layers in your application. It offers multiple strategies to handle DTOs with flexibility and performance in mind.
 
-### There is several ways to use.
-- [Create your DTO and just use GenerateDtoTraitsCommand.php to generate getters and setters.](docs/USING_TRAITS.md)
-- [Create your DTO and extend AbstractReflectionTransfer.](docs/USING_REFLECTION.md)
-- [Create your DTO and extend AbstractTransfer. But with several configurations inside your DTO.](docs/MANUALLY_CONFIGURED_TRANSFER.md)
-- [Use optimized cache for your transfer.](docs/USE_CACHE_GENERATOR.md)
+## Key Features
 
-Also, you can configure your DTO using attributes in `\ShveiderDto\Attributes\\` namespace.
+- **Reflection-Based DTOs**: Easy to use but slower due to the use of reflection.
+- **Configurable DTOs**: DTOs with configurable traits that provide setters, getters, and additional customization options.
+- **Cached DTOs**: DTOs with cached metadata to improve performance by avoiding reflection.
+- **Cast DTOs**: Simplified DTOs that rely on casting without additional setters or getters.
 
-DTO has methods described in interface [DataTransferObjectInterface.php](src%2FDataTransferObjectInterface.php)
+**DTO Can't work with private properties.**
+Because parent class or trait don't have access to child props.
+
+**But AbstractReflectionTransfer have access to all type of props.**
+
+## Available DTO Types
+
+### 1. `AbstractReflectionTransfer`
+- Uses reflection to populate data from arrays and vice versa.
+- Suitable for quick, dynamic DTO generation.
+- **Performance**: Slower due to reflection overhead.
+
+[read more](docs/AbstractReflectionTransfer.md)
+
+### 2. `AbstractConfigurableTransfer`
+- Uses traits to configure behavior (setters, getters, adders).
+- Provides a more structured approach with configurable fields.
+- **Performance**: Faster than reflection-based DTOs but with more boilerplate code.
+
+[read more](docs/AbstractConfigurableTransfer.md)
+
+### 3. `AbstractCastTransfer`
+- Relies on casting to handle DTO properties.
+- Simplified, does not provide setters/getters.
+- **Performance**: Very fast, but lacks the convenience of configurable options.
+
+[read more](docs/AbstractCastTransfer.md)
+### 4. `AbstractCachedTransfer`
+- Uses a generated cache to store DTO metadata, avoiding the overhead of reflection.
+- Ideal for performance-critical applications.
+- **Performance**: Fast, with no runtime reflection involved.
+
+[read more](docs/AbstractCachedTransfer.md)
+
+## Generating Cache and Traits
+
+You can generate the necessary cache and traits for DTOs using the provided commands:
+
 ```php
-    /** - Takes values from array and set it to defined properties in your data transfer object. */
-    public function fromArray(array $data): static;
-
-    /** - Takes properties in your data transfer object and returns it ass array key => value. */
-    public function toArray(bool $recursive = false): array;
-
-    /**
-     *  - Takes modified properties in your data transfer object and returns it ass array key => value.
-     *  - Modified properties: properties that was modified by fromArray and set* method.
-     */
-    public function modifiedToArray(): array;
-
-    /** - Calls toArray method inside and convert it to json string. */
-    public function toJson(bool $pretty = false): string;
+(new GenerateDtoCacheFile(
+    new ShveiderDtoFactory(),
+    new GenerateDTOConfig(
+        readFrom: __DIR__ . '/../tests/CacheDTO/*/Transfers',
+        writeTo:  __DIR__ . '/../src/Cache/',
+        writeToNamespace: 'ShveiderDto\Cache',
+    )
+))->execute();
 ```
 
-All classes in library are extendable. You are able to extend it on your project level and modify.
+Use the following command to generate DTO traits:
 
-# Get Started:
-
-#### Attributes
 ```php
-<?php
 
-namespace ShveiderDtoTest\DTO\Module3\Transfers;
+$modulesConfig = new GenerateDTOConfig(
+    __DIR__ . '/../tests/DTO/*/Transfers',
+    __DIR__ . '/../tests/Generated',
+    'ShveiderDtoTest\Generated',
+    minified: false,
+);
 
-use DateTime;
-use ShveiderDto\AbstractTransfer;
-use ShveiderDto\Attributes\ArrayOf;
-use ShveiderDtoTest\DTO\Module3\Transfers\Generated\UserCollectionTransferTrait;
+(new GenerateDtoTraitsCommand(new ShveiderDtoFactory(), $modulesConfig))->execute();
 
-class UserCollectionTransfer extends AbstractTransfer
+```
+
+## Methods that all transfers have.
+The transfer class inherits methods defined in the DataTransferObjectInterface. These methods help to easily manipulate data within transfer objects by converting between arrays and objects, tracking modified properties, and serializing data. Below are the key methods you can use:
+
+1. `fromArray(array $data): static` <br/>
+   This method allows you to populate the properties of a transfer object using an associative array. It maps each array key to the corresponding property in the transfer object.
+```php
+$userTransfer = new UserTransfer();
+$userTransfer->fromArray([
+    'name' => 'John Doe',
+    'age' => 30,
+    'address' => [
+        'city' => 'New York',
+        'country' => 'USA'
+    ],
+]);
+```
+**Behavior**:
+- The method sets values in the transfer object based on the keys in the $data array.
+- If the transfer object contains nested DTOs, it will automatically populate those nested objects as well.
+
+2. `toArray(bool $recursive = false): array` <br/>
+   The toArray method converts the transfer object back into an associative array, with properties as keys and their respective values. If the object contains nested DTOs, and the $recursive flag is set to true, it will also convert those nested objects into arrays.
+```php
+$array = $userTransfer->toArray(true);
+```
+**Behavior**:
+- When $recursive is true, any nested DTOs are also converted to arrays.
+- When $recursive is false, nested DTOs remain as objects in the array.
+
+Example of Output: 
+```php
+[
+    'name' => 'John Doe',
+    'age' => 30,
+    'address' => [
+        'city' => 'New York',
+        'country' => 'USA'
+    ]
+]
+```
+
+3. `modifiedToArray(): array` <br/>
+   This method returns only the properties that have been modified. A property is considered modified if it was set or changed via the fromArray() method or a setter method.
+
+`Usage Example`:
+```php
+$userTransfer->fromArray([
+    'name' => 'Jane Doe'
+]);
+$modified = $userTransfer->modifiedToArray();
+```
+**Behavior**: <br/>
+ - It returns an associative array of only the properties that were changed since the creation of the object or since the last reset of modified state.
+
+**Example Output**:
+```php
+[
+    'name' => 'Jane Doe'
+]
+```
+
+4. `toJson(bool $pretty = false): string` <br/>
+   The toJson method serializes the transfer object into a JSON string. If $pretty is set to true, the resulting JSON string will be formatted with indentation for readability.
+
+**Usage Example**:
+```php
+$json = $userTransfer->toJson(true);
+```
+Output:
+```json
 {
-    use UserCollectionTransferTrait;
-
-    #[ArrayOf(type: '\ShveiderDtoTest\DTO\Module2\Transfers\UserTransfer', singular: 'user')]
-    protected array $users;
-
-    #[ArrayOf(type: DateTime::class, singular: 'date')]
-    protected array $dates = [];
-
-    #[ArrayOf('array', 'orderData')]
-    protected array $ordersList = [];
-
-    public function mapArrayToDates(array $date): void
-    {
-        $this->dates = [];
-
-        foreach ($date as $item) {
-            $this->dates[] = new DateTime(
-                $item['date'] ?? 'now',
-                    isset($item['timezone']) ? new \DateTimeZone($item['timezone']): null
-            );
-        }
+    "name": "John Doe",
+    "age": 30,
+    "address": {
+        "city": "New York",
+        "country": "USA"
     }
 }
 ```
+These methods provide a flexible way to work with data transfer objects, allowing seamless conversions between arrays, objects, and JSON while also tracking modified properties for efficient updates.
 
-trait that will be generated for this attributes
+| Method                  | Description                                                                 |
+|-------------------------|-----------------------------------------------------------------------------|
+| `fromArray(array $data)` | Sets the transfer object’s properties from an associative array.             |
+| `toArray(bool $recursive)` | Converts the transfer object back to an array, optionally recursively.     |
+| `modifiedToArray()`      | Returns an array of only the modified properties.                           |
+| `toJson(bool $pretty)`   | Serializes the transfer object into a JSON string.                          |
 
-```php
-<?php
 
-namespace ShveiderDtoTest\DTO\Module3\Transfers\Generated;
+More documentation:
+- [docs](docs)
+- [AbstractCachedTransfer.md](docs%2FAbstractCachedTransfer.md)
+- [AbstractCastTransfer.md](docs%2FAbstractCastTransfer.md)
+- [AbstractConfigurableTransfer.md](docs%2FAbstractConfigurableTransfer.md)
+- [AbstractReflectionTransfer.md](docs%2FAbstractReflectionTransfer.md)
+- [MANUALLY_CONFIGURED_TRANSFER.md](docs%2FMANUALLY_CONFIGURED_TRANSFER.md)
+- [USE_CACHE_GENERATOR.md](docs%2FUSE_CACHE_GENERATOR.md)
+- [USING_REFLECTION.md](docs%2FUSING_REFLECTION.md)
+- [USING_TRAITS.md](docs%2FUSING_TRAITS.md)
 
-/** Auto generated class. Do not change anything here. */
-trait UserCollectionTransferTrait
-{
-	protected array $__registered_vars = ['users', 'dates', 'ordersList'];
 
-	protected array $__registered_transfers = [];
-
-	protected array $__registered_array_transfers = ['users' => '\ShveiderDtoTest\DTO\Module2\Transfers\UserTransfer'];
-
-	/** @return array<\ShveiderDtoTest\DTO\Module2\Transfers\UserTransfer> */
-	public function getUsers(): array { return $this->users;}
-	public function setUsers(array $v): static { $this->__modified['users'] = true; $this->users = $v; return $this;}
-	/** @return array<\DateTime> */
-	public function getDates(): array { return $this->dates;}
-	public function setDates(array $v): static { $this->__modified['dates'] = true; $this->dates = $v; return $this;}
-	/** @return array<array> */
-	public function getOrdersList(): array { return $this->ordersList;}
-	public function setOrdersList(array $v): static { $this->__modified['ordersList'] = true; $this->ordersList = $v; return $this;}
-	public function addUser(\ShveiderDtoTest\DTO\Module2\Transfers\UserTransfer $v): static { $this->__modified['users'] = true; $this->users[] = $v; return $this;}
-	public function addDate(\DateTime $v): static { $this->__modified['dates'] = true; $this->dates[] = $v; return $this;}
-	public function addOrderData(array $v): static { $this->__modified['ordersList'] = true; $this->ordersList[] = $v; return $this;}
-}
-```
-
-#### Create your DTO and extend AbstractTransfer. But with several configurations inside your DTO.
-
-Examples: 

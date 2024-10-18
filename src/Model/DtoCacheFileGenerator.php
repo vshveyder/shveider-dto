@@ -1,13 +1,16 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace ShveiderDto\Model;
 
 use ReflectionClass;
 use ShveiderDto\GenerateDTOConfig;
-use ShveiderDto\Model\Code\DtoCache;
+use ShveiderDto\Model\Code\Cache;
 
 class DtoCacheFileGenerator
 {
+    /**
+     * @var array<string, array<\ShveiderDto\Model\Code\Cache>>
+     */
     private array $cache = [];
 
     /**
@@ -18,30 +21,44 @@ class DtoCacheFileGenerator
     }
 
     public function generate(
-        ReflectionClass $reflectionClass,
+        ReflectionClass   $reflectionClass,
         GenerateDTOConfig $config,
-        DtoCache $dtoCache,
+        Cache             $dtoCache,
     ): void {
         foreach ($this->expanderPlugins as $expanderPlugin) {
             $dtoCache = $expanderPlugin->expand($reflectionClass, $config, $dtoCache);
         }
 
-        $this->cache[] = (string)$dtoCache;
+        $this->cache[$dtoCache->getCacheClass() ?: $config->dtoCacheName][] = (string)$dtoCache;
     }
 
-    public function save(string $writeTo, $writeNamespace): void
+    public function save(string $writePath, string $writeNamespace): void
     {
-        $cache = implode(",\n\t\t", $this->cache);
+        $writeNamespace = trim($writeNamespace, '/\\');
 
-        file_put_contents($writeTo, <<<PHP
-<?php
+        foreach ($this->cache as $className => $cache) {
+            $className = ucfirst($className);
+            $this->putContents(
+                rtrim($writePath, '/') . '/' . $className . '.php',
+                $writeNamespace,
+                $className,
+                implode(",\n\t\t", $cache),
+            );
+        }
+    }
 
-namespace $writeNamespace;
+    protected function putContents(string $path, string $namespace, string $className, string $cache): void
+    {
+        file_put_contents($path, <<<PHP
+<?php declare(strict_types=1);
 
-class TransferCache {
+namespace $namespace;
+
+class $className
+{
     public const CACHE = [
         $cache
-    ];
+    ];   
 }
 PHP);
     }

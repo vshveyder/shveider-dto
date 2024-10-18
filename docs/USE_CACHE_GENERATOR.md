@@ -4,10 +4,10 @@
     ```php
     
     namespace MyNamespace;
-    
-    use ShveiderDto\SVTransfer;
-    
-    class MyTransfer extends SVTransfer
+
+    use ShveiderDto\AbstractCachedTransfer;
+
+    class MyTransfer extends AbstractCachedTransfer
     {
         // determine cache transfer.
         protected string $cache = '\MyNamespace\Cache\CacheTransfer';

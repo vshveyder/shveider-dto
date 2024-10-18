@@ -1,9 +1,11 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace ShveiderDto\Command;
 
 use ReflectionClass;
-use ShveiderDto\AbstractTransfer;
+use ShveiderDto\AbstractCachedTransfer;
+use ShveiderDto\AbstractConfigurableTransfer;
+use ShveiderDto\Attributes\TransferSkip;
 use ShveiderDto\GenerateDTOConfig;
 use ShveiderDto\Helpers\DtoFilesReader;
 use ShveiderDto\Model\DtoCacheFileGenerator;
@@ -28,22 +30,27 @@ class GenerateDtoCacheFile
         $this->validate();
 
         foreach ($this->dtoFilesReader->getFilesGenerator($this->config) as $dtoFile) {
-            if (!class_exists($dtoFile->fullNamespace)) {
+            if (!class_exists($dtoFile->getFullNamespace())) {
                 continue;
             }
 
-            $reflectionClass = new ReflectionClass($dtoFile->fullNamespace);
+            $reflectionClass = new ReflectionClass($dtoFile->getFullNamespace());
 
-            if (!$this->isDataTransferObject($reflectionClass)) {
+            if (!$this->isDataTransferObject($reflectionClass) || $this->shouldBeSkipped($reflectionClass)) {
                 continue;
             }
 
             $dtoCache = $this->factory->createDtoCache($dtoFile->traitName);
-            $dtoCache->setClass($dtoFile->fullNamespace);
+            $dtoCache->setClass($dtoFile->getFullNamespace());
             $this->dtoCacheFileGenerator->generate($reflectionClass, $this->config, $dtoCache);
         }
 
         $this->dtoCacheFileGenerator->save($this->config->getWriteTo(), $this->config->getWriteToNamespace());
+    }
+
+    protected function shouldBeSkipped(ReflectionClass $reflectionClass): bool
+    {
+        return !empty($reflectionClass->getAttributes(TransferSkip::class));
     }
 
     /** @throws \Exception */
@@ -66,7 +73,11 @@ class GenerateDtoCacheFile
             return false;
         }
 
-        if ($parent->getName() === AbstractTransfer::class) {
+        if ($parent->getName() === AbstractConfigurableTransfer::class) {
+            return false;
+        }
+
+        if ($parent->getName() === AbstractCachedTransfer::class) {
             return true;
         }
 

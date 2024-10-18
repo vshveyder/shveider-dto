@@ -35,6 +35,12 @@ readonly class DtoTraitGenerator
         file_put_contents($file, $trait);
     }
 
+    public function deleteTrait(DtoTrait $trait, GenerateDTOConfig $config, string $directory): void
+    {
+        $file = $this->resolveStorageAndReturnFilePath($config, $directory, $trait->getName());
+        file_exists($file) && unlink($file);
+    }
+
     public function generateEmptyTrait(DtoTrait $trait, GenerateDTOConfig $config, string $transferDir, string $transferNamespace): void
     {
         $file = $this->resolveStorageAndReturnFilePath($config, $transferDir, $trait->getName());

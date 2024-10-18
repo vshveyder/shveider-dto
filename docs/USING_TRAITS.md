@@ -63,9 +63,9 @@ class TransferGenerate extends Command
 ```php
 <?php
 
-use ShveiderDto\AbstractTransfer;
+use ShveiderDto\AbstractConfigurableTransfer;
 
-class UserTransfer extends AbstractTransfer
+class UserTransfer extends AbstractConfigurableTransfer
 {
     protected ?string $name = null;
 
@@ -77,16 +77,16 @@ class UserTransfer extends AbstractTransfer
 
 ### Run command `make:transfers`
 
-Command will generate traits for objects that extend `ShveiderDto\AbstractTransfer` and placed in directory you mentioned in cli command.
+Command will generate traits for objects that extend `ShveiderDto\AbstractConfigurableTransfer` and placed in directory you mentioned in cli command.
 
 ### Add generated trait to your Transfer.
 ```php
 <?php
 
-use ShveiderDto\AbstractTransfer;
+use ShveiderDto\AbstractConfigurableTransfer;
 use Generated\UserTransferTrait;
 
-class UserTransfer extends AbstractTransfer
+class UserTransfer extends AbstractConfigurableTransfer
 {
     use UserTransferTrait; // <- add trait.
 

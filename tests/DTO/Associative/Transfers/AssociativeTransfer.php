@@ -2,11 +2,11 @@
 
 namespace ShveiderDtoTest\DTO\Associative\Transfers;
 
-use ShveiderDto\AbstractTransfer;
+use ShveiderDto\AbstractConfigurableTransfer;
 use ShveiderDto\Attributes\ArrayOf;
 use ShveiderDtoTest\DTO\Associative\Transfers\Generated\AssociativeTransferTrait;
 
-class AssociativeTransfer extends AbstractTransfer
+class AssociativeTransfer extends AbstractConfigurableTransfer
 {
     use AssociativeTransferTrait;
 

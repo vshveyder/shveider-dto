@@ -1,11 +1,11 @@
 <?php
 
-namespace ShveiderDtoTest\CacheDTO\Module1\Transfers;
+namespace ShveiderDtoTest\CacheDTO\ModuleCache1\Transfers;
 
 use ShveiderDto\Attributes\ArrayOf;
-use ShveiderDto\SVTransfer;
+use ShveiderDto\AbstractCachedTransfer;
 
-class SomeCollectionTransfer extends SVTransfer
+class SomeCollectionTransfer extends AbstractCachedTransfer
 {
     #[ArrayOf(SomeResourceTransfer::class, 'resource')]
     public array $resources = [];

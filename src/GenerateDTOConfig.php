@@ -1,17 +1,22 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace ShveiderDto;
 
-readonly class GenerateDTOConfig
+class GenerateDTOConfig
 {
     protected const DIRECTORY_NAME_FOR_GENERATED_FILES = 'Generated';
 
+    protected const DEFAULT_TRANSFER_CACHE_NAME = 'TransferCache';
+
+    public string $dtoCacheName;
+
     public function __construct(
-        private string $readFrom,
-        private string $writeTo = '',
-        private string $writeToNamespace = '',
-        private bool $minified = false,
+        private readonly string $readFrom,
+        private readonly string $writeTo = '',
+        private readonly string $writeToNamespace = '',
+        private readonly bool $minified = false,
     ) {
+        $this->dtoCacheName = static::DEFAULT_TRANSFER_CACHE_NAME;
     }
 
     /**
@@ -53,5 +58,12 @@ readonly class GenerateDTOConfig
     public function getWriteToNamespace(): string
     {
         return $this->writeToNamespace;
+    }
+
+    public function withDtoCacheName(string $dtoCacheName): static
+    {
+        $this->dtoCacheName = $dtoCacheName;
+
+        return $this;
     }
 }

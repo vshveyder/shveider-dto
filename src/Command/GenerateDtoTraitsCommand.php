@@ -1,13 +1,15 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace ShveiderDto\Command;
 
 use ReflectionClass;
-use ShveiderDto\AbstractTransfer;
+use ShveiderDto\AbstractConfigurableTransfer;
+use ShveiderDto\Attributes\TransferSkip;
 use ShveiderDto\GenerateDTOConfig;
 use ShveiderDto\Helpers\DtoFilesReader;
 use ShveiderDto\Model\DtoTraitGenerator;
 use ShveiderDto\ShveiderDtoFactory;
+use ShveiderDto\AbstractCachedTransfer;
 
 class GenerateDtoTraitsCommand
 {
@@ -30,24 +32,39 @@ class GenerateDtoTraitsCommand
         $this->checkWriteDir();
 
         foreach ($this->dtoFilesReader->getFilesGenerator($this->config) as $dtoFile) {
-            $emptyTraitGenerator = $this->factory->createDtoTrait($dtoFile->traitName);
-            $this->dtoGenerator->generateEmptyTrait($emptyTraitGenerator, $this->config, $dtoFile->filesDir, $dtoFile->dirNamespace);
+            $emptyTrait = $this->factory->createDtoTrait($dtoFile->traitName);
+            $this->dtoGenerator->generateEmptyTrait($emptyTrait, $this->config, $dtoFile->filesDir, $dtoFile->dirNamespace);
         }
 
         foreach ($this->dtoFilesReader->getFilesGenerator($this->config) as $dtoFile) {
-            if (!class_exists($dtoFile->fullNamespace)) {
+            if (!class_exists($dtoFile->getFullNamespace())) {
                 continue;
             }
 
-            $reflectionClass = new ReflectionClass($dtoFile->fullNamespace);
+            $reflectionClass = new ReflectionClass($dtoFile->getFullNamespace());
 
             if (!$this->isDataTransferObject($reflectionClass)) {
+                $this->dtoGenerator
+                    ->deleteTrait($this->factory->createDtoTrait($dtoFile->traitName), $this->config, $dtoFile->filesDir);
+
                 continue;
             }
 
-            $traitGenerator = $this->factory->createDtoTrait($dtoFile->traitName);
-            $this->dtoGenerator->generate($reflectionClass, $this->config, $traitGenerator, $dtoFile->filesDir, $dtoFile->dirNamespace);
+            if ($this->shouldBeSkipped($reflectionClass)) {
+                $this->dtoGenerator
+                    ->deleteTrait($this->factory->createDtoTrait($dtoFile->traitName), $this->config, $dtoFile->filesDir);
+
+                continue;
+            }
+
+            $trait = $this->factory->createDtoTrait($dtoFile->traitName);
+            $this->dtoGenerator->generate($reflectionClass, $this->config, $trait, $dtoFile->filesDir, $dtoFile->dirNamespace);
         }
+    }
+
+    protected function shouldBeSkipped(ReflectionClass $reflectionClass): bool
+    {
+        return !empty($reflectionClass->getAttributes(TransferSkip::class));
     }
 
     /** @throws \Exception */
@@ -70,7 +87,11 @@ class GenerateDtoTraitsCommand
             return false;
         }
 
-        if ($parent->getName() === AbstractTransfer::class) {
+        if ($parent->getName() === AbstractCachedTransfer::class) {
+            return false;
+        }
+
+        if ($parent->getName() === AbstractConfigurableTransfer::class) {
             return true;
         }
 

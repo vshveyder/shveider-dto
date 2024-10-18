@@ -1,12 +1,12 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace ShveiderDto\Plugins;
 
 use ReflectionClass;
 use ReflectionProperty;
-use ShveiderDto\DataTransferObjectInterface;
+use ShveiderDto\Constants;
 use ShveiderDto\GenerateDTOConfig;
-use ShveiderDto\Model\Code\AbstractDtoDtoClass;
+use ShveiderDto\Model\Code\AbstractDtoClass;
 use ShveiderDto\Model\Code\Method;
 use ShveiderDto\ShveiderDtoExpanderPluginsInterface;
 use ShveiderDto\Traits\GetTypeTrait;
@@ -18,8 +18,8 @@ class GetSetMethodShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlugin
     public function expand(
         ReflectionClass   $reflectionClass,
         GenerateDTOConfig $config,
-        AbstractDtoDtoClass $traitGenerator
-    ): AbstractDtoDtoClass {
+        AbstractDtoClass  $abstractDtoObject
+    ): AbstractDtoClass {
         foreach ($reflectionClass->getProperties() as $property) {
             if ($property->isPrivate()) {
                 continue;
@@ -29,14 +29,14 @@ class GetSetMethodShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlugin
                 continue;
             }
 
-            $this->expandByPropertyGet($property, $traitGenerator);
-            $this->expandByPropertySet($property, $traitGenerator);
+            $this->expandByPropertyGet($property, $abstractDtoObject);
+            $this->expandByPropertySet($property, $abstractDtoObject);
         }
 
-        return $traitGenerator;
+        return $abstractDtoObject;
     }
 
-    protected function expandByPropertyGet(ReflectionProperty $reflectionProperty, AbstractDtoDtoClass $traitGenerator): void
+    protected function expandByPropertyGet(ReflectionProperty $reflectionProperty, AbstractDtoClass $traitGenerator): void
     {
         $propertyName = $reflectionProperty->getName();
         $methodName = 'get' . ucfirst($propertyName);
@@ -48,7 +48,7 @@ class GetSetMethodShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlugin
         $traitGenerator->addMethod($methodName, $methodGenerator);
     }
 
-    protected function expandByPropertySet(ReflectionProperty $reflectionProperty, AbstractDtoDtoClass $traitGenerator): void
+    protected function expandByPropertySet(ReflectionProperty $reflectionProperty, AbstractDtoClass $traitGenerator): void
     {
         if ($reflectionProperty->isReadOnly()) {
             return;
@@ -73,6 +73,6 @@ class GetSetMethodShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlugin
 
     protected function getSkippedProperties(): array
     {
-        return DataTransferObjectInterface::SKIPPED_PROPERTIES;
+        return Constants::SHARED_SKIPPED_PROPERTIES;
     }
 }

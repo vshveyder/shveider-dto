@@ -34,5 +34,5 @@ foreach ($userCollectionTransfer2->getOrdersList() as $item) {
 
 assert(!empty($userCollectionTransfer2->getDates()));
 foreach ($userCollectionTransfer2->getDates() as $date) {
-    assert(is_a($date, DateTime::class));
+    assert(isset($date['date']) && isset($date['timezone_type']) && isset($date['timezone']));
 }

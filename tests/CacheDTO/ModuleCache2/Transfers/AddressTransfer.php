@@ -1,10 +1,10 @@
 <?php
 
-namespace ShveiderDtoTest\CacheDTO\Module2\Transfers;
+namespace ShveiderDtoTest\CacheDTO\ModuleCache2\Transfers;
 
-use ShveiderDto\SVTransfer;
+use ShveiderDto\AbstractCachedTransfer;
 
-class AddressTransfer extends SVTransfer
+class AddressTransfer extends AbstractCachedTransfer
 {
     public ?string $city;
 

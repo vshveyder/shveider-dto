@@ -1,7 +1,7 @@
 <?php
 
-use ShveiderDtoTest\CacheDTO\Module2\Transfers\AddressTransfer;
-use ShveiderDtoTest\CacheDTO\Module2\Transfers\UserTransfer;
+use ShveiderDtoTest\CacheDTO\ModuleCache2\Transfers\AddressTransfer;
+use ShveiderDtoTest\CacheDTO\ModuleCache2\Transfers\UserTransfer;
 
 /** TEST fromArray method - start */
 $userTransfer = new UserTransfer();

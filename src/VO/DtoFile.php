@@ -1,15 +1,20 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace ShveiderDto\VO;
 
-class DtoFile
+readonly class DtoFile
 {
     public function __construct(
         public string $filesDir,
         public string $content,
-        public string $fullNamespace,
+        private string $fullNamespaceBase64,
         public string $dirNamespace,
         public string $traitName
     ) {
+    }
+
+    public function getFullNamespace(): string
+    {
+        return base64_decode($this->fullNamespaceBase64);
     }
 }

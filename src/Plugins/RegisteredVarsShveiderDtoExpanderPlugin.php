@@ -3,17 +3,18 @@
 namespace ShveiderDto\Plugins;
 
 use ReflectionClass;
+use ShveiderDto\AbstractConfigurableTransfer;
 use ShveiderDto\AbstractReflectionTransfer;
 use ShveiderDto\AbstractTransfer;
-use ShveiderDto\DataTransferObjectInterface;
+use ShveiderDto\Constants;
 use ShveiderDto\GenerateDTOConfig;
-use ShveiderDto\Model\Code\AbstractDtoDtoClass;
+use ShveiderDto\Model\Code\AbstractDtoClass;
 use ShveiderDto\ShveiderDtoExpanderPluginsInterface;
-use ShveiderDto\SVTransfer;
+use ShveiderDto\AbstractCachedTransfer;
 
 class RegisteredVarsShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPluginsInterface
 {
-    public function expand(ReflectionClass $reflectionClass, GenerateDTOConfig $config, AbstractDtoDtoClass $traitGenerator): AbstractDtoDtoClass
+    public function expand(ReflectionClass $reflectionClass, GenerateDTOConfig $config, AbstractDtoClass $abstractDtoObject): AbstractDtoClass
     {
         foreach ($reflectionClass->getProperties() as $property) {
             if ($property->isPrivate()) {
@@ -24,7 +25,7 @@ class RegisteredVarsShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlug
                 continue;
             }
 
-            $traitGenerator->addRegisteredVar($property->getName());
+            $abstractDtoObject->addRegisteredVar($property->getName());
 
             if (!class_exists('\\' . $property->getType()->getName())) {
                 continue;
@@ -32,22 +33,22 @@ class RegisteredVarsShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlug
 
             $parentClass = get_parent_class('\\' . $property->getType()->getName());
 
-            if (in_array($parentClass, [AbstractTransfer::class, AbstractReflectionTransfer::class, SVTransfer::class])) {
-                $traitGenerator
-                    ->addRegisteredTransfer($property->getName(), '\\' . $property->getType()->getName());
+            if (is_a($parentClass, AbstractTransfer::class) || in_array($parentClass, [AbstractTransfer::class, AbstractReflectionTransfer::class, AbstractCachedTransfer::class, AbstractConfigurableTransfer::class])) {
+                $abstractDtoObject
+                    ->addRegisteredTransfer($property->getName(), $property->getType()->getName());
             }
 
             if ($parentClass === \ArrayObject::class || $property->getType()->getName() === \ArrayObject::class) {
-                $traitGenerator
-                    ->addRegisteredArrayObject($property->getName(), '\\' . $property->getType()->getName());
+                $abstractDtoObject
+                    ->addRegisteredArrayObject($property->getName(), $property->getType()->getName());
             }
         }
 
-        return $traitGenerator;
+        return $abstractDtoObject;
     }
 
     protected function getSkippedProperties(): array
     {
-        return DataTransferObjectInterface::SKIPPED_PROPERTIES;
+        return Constants::SHARED_SKIPPED_PROPERTIES;
     }
 }

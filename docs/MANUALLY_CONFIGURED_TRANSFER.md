@@ -2,16 +2,16 @@
 # Configure DTO manually
 
 
-! ShveiderDto\AbstractTransfer can't work with private properties.
+! ShveiderDto\AbstractConfigurableTransfer can't work with private properties.
 
 ```php
 <?php
 
 namespace ShveiderDtoTest\DTO\Module2\Transfers;
 
-use ShveiderDto\AbstractTransfer;
+use ShveiderDto\AbstractConfigurableTransfer;
 
-class UserAddRequestTransfer extends AbstractTransfer
+class UserAddRequestTransfer extends AbstractConfigurableTransfer
 {
     protected array $__registered_vars = ['user'];
 
@@ -28,9 +28,9 @@ class UserAddRequestTransfer extends AbstractTransfer
 
 namespace ShveiderDtoTest\DTO\Module2\Transfers;
 
-use ShveiderDto\AbstractTransfer;
+use ShveiderDto\AbstractConfigurableTransfer;
 
-class UserTransfer extends AbstractTransfer
+class UserTransfer extends AbstractConfigurableTransfer
 {
     protected array $__registered_vars = ['name', 'age', 'address'];
 
@@ -52,9 +52,9 @@ class UserTransfer extends AbstractTransfer
 namespace ShveiderDtoTest\DTO\Module3\Transfers;
 
 use DateTime;
-use ShveiderDto\AbstractTransfer;
+use ShveiderDto\AbstractConfigurableTransfer;
 
-class UserCollectionTransfer extends AbstractTransfer
+class UserCollectionTransfer extends AbstractConfigurableTransfer
 {
     protected array $__registered_vars = ['users', 'dates', 'ordersList'];
 

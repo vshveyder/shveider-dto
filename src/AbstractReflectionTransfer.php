@@ -1,18 +1,22 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace ShveiderDto;
 
+use AllowDynamicProperties;
 use ReflectionObject;
 
 /**
  * Transfer that use reflection object to grab properties.
  * With this class you can add private properties to your dto and use toArray as well.
  */
+#[AllowDynamicProperties]
 abstract class AbstractReflectionTransfer implements DataTransferObjectInterface
 {
+    public const SHARED_SKIPPED_PROPERTIES = ['__modified', '__reflection'];
+
     protected array $__modified = [];
 
-    protected ReflectionObject $__reflection;
+    private ReflectionObject $__reflection;
 
     public function __construct()
     {
@@ -24,15 +28,7 @@ abstract class AbstractReflectionTransfer implements DataTransferObjectInterface
         $properties = [];
 
         foreach ($this->__reflection->getProperties() as $property) {
-            if ($property->isStatic()) {
-                continue;
-            }
-
-            if ($property->getName() === '__reflection') {
-                continue;
-            }
-
-            if (in_array($property->getName(), static::SKIPPED_PROPERTIES)) {
+            if ($property->isStatic() || in_array($property->getName(), static::SHARED_SKIPPED_PROPERTIES)) {
                 continue;
             }
 
@@ -52,19 +48,16 @@ abstract class AbstractReflectionTransfer implements DataTransferObjectInterface
         $properties = [];
 
         foreach ($this->__reflection->getProperties() as $property) {
-            if ($property->isStatic()) {
+            if ($property->isStatic() || in_array($property->getName(), static::SHARED_SKIPPED_PROPERTIES)) {
                 continue;
             }
 
-            if ($property->getName() === '__reflection') {
-                continue;
-            }
+            $name = $property->getName();
+            $properties[$name] = $property->isInitialized($this) ? $property->getValue($this) : null;
 
-            if (in_array($property->getName(), static::SKIPPED_PROPERTIES)) {
-                continue;
+            if ($properties[$name] && $recursive && is_a($properties[$name], DataTransferObjectInterface::class)) {
+                $properties[$name] = $properties[$name]->toArray($recursive);
             }
-
-            $properties[$property->getName()] = $property->isInitialized($this) ? $property->getValue($this) : null;
         }
 
         return $properties;
@@ -81,11 +74,17 @@ abstract class AbstractReflectionTransfer implements DataTransferObjectInterface
                 continue;
             }
 
-            if (!$this->__modified[$property->getName()]) {
+            $name = $property->getName();
+
+            if (!$this->__modified[$name]) {
                 continue;
             }
 
-            $properties[$property->getName()] = $property->isInitialized($this) ? $property->getValue($this) : null;
+            $properties[$name] = $property->isInitialized($this) ? $property->getValue($this) : null;
+
+            if ($properties[$name] && $recursive && is_a($properties[$name], DataTransferObjectInterface::class)) {
+                $properties[$name] = $properties[$name]->toArray($recursive);
+            }
         }
 
         return $properties;
@@ -94,37 +93,5 @@ abstract class AbstractReflectionTransfer implements DataTransferObjectInterface
     public function toJson(bool $pretty = false): string
     {
         return json_encode($this->toArray(true), $pretty ? JSON_PRETTY_PRINT : 0);
-    }
-
-    public function validateVarsIsset(array $vars): array
-    {
-        $invalidated = [];
-
-        foreach ($this->__reflection->getProperties() as $property) {
-            if ($property->isStatic()) {
-                continue;
-            }
-
-            if ($property->getName() === '__reflection') {
-                continue;
-            }
-
-            if (in_array($property->getName(), static::SKIPPED_PROPERTIES)) {
-                continue;
-            }
-
-            if (in_array($property->getName(), $vars)) {
-                if (!$property->isInitialized($this)) {
-                    $invalidated[] = $property->getName();
-                    continue;
-                }
-
-                if ($property->getValue($this) === null) {
-                    $invalidated[] = $property->getName();
-                }
-            }
-        }
-
-        return $invalidated;
     }
 }

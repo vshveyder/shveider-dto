@@ -1,17 +1,9 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace ShveiderDto;
 
 interface DataTransferObjectInterface
 {
-    public const SKIPPED_PROPERTIES = [
-        '__modified',
-        '__registered_vars',
-        '__registered_transfers',
-        '__registered_array_transfers',
-        '__registered_ao',
-    ];
-
     /**
      * Specification:
      * - Takes values from array and set it to defined properties in your data transfer object.
@@ -50,15 +42,4 @@ interface DataTransferObjectInterface
      * @return string
      */
     public function toJson(bool $pretty = false): string;
-
-    /**
-     * Specification:
-     * - Take array of vars and check if all values are set.
-     * - If not, return array of field name that are not set.
-     *
-     * @param array $vars
-     *
-     * @return array
-     */
-    public function validateVarsIsset(array $vars): array;
 }
