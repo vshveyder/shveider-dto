@@ -5,6 +5,8 @@ namespace ShveiderDto\Command;
 use ReflectionClass;
 use ShveiderDto\AbstractCachedTransfer;
 use ShveiderDto\AbstractConfigurableTransfer;
+use ShveiderDto\AbstractTransfer;
+use ShveiderDto\Attributes\TransferCache;
 use ShveiderDto\Attributes\TransferSkip;
 use ShveiderDto\GenerateDTOConfig;
 use ShveiderDto\Helpers\DtoFilesReader;
@@ -81,10 +83,23 @@ class GenerateDtoCacheFile
             return true;
         }
 
+        if ($this->hasTransferCacheAttribute($parent)) {
+            return true;
+        }
+
         if (is_a($parent, ReflectionClass::class)) {
             return $this->isDataTransferObject($parent);
         }
 
         return false;
+    }
+
+    public function hasTransferCacheAttribute(ReflectionClass $class): bool
+    {
+        if (!is_a($class->getName(), AbstractTransfer::class)) {
+            return false;
+        }
+
+        return !empty($class->getAttributes(TransferCache::class));
     }
 }

@@ -18,6 +18,7 @@ use ShveiderDto\AbstractCachedTransfer;use ShveiderDto\Attributes\TransferCache;
 #[TransferCache('YourOwnCacheTransferName')] // (optional) if you want to have different name for cache class for some classes.
 class AddressTransfer extends AbstractCachedTransfer
 {
+    protected string $__cache = 'namespace where you want to place your cache transfer';
     public ?string $city;
     public ?string $country;
     public ?string $zip;
@@ -60,3 +61,16 @@ In this example, the cache stores information about the properties (id, name, ag
  - Performance: Fast, as it avoids the overhead of reflection.
  - Usage: Best suited for DTOs that are used frequently and need high performance.
 ---
+
+For better experience you can create your own Abstract cache transfer. And extend it in your dto.  
+
+```php
+namespace ShveiderDtoTest\CacheDTO\ModuleCache2\Transfers;
+
+use ShveiderDto\AbstractCachedTransfer;use ShveiderDto\Attributes\TransferCache;
+#[TransferCache('YourOwnCacheTransferName')] // in this case you need to set name for cache transfer.
+abstract class YourOwnCacheTransfer extends AbstractCachedTransfer
+{
+    protected string $__cache = 'namespace where you want to place your YourOwnCacheTransferName';
+}
+```

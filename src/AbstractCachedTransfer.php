@@ -12,7 +12,7 @@ abstract class AbstractCachedTransfer extends AbstractTransfer
         '__cache' => 2,
     ];
 
-    protected string $__cache = '\ShveiderDto\Cache\TransferCache';
+    protected string $__cache;
 
     protected function hasRegisteredArrayTransfers(string $name): bool
     {
