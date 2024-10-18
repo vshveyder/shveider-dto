@@ -5,7 +5,11 @@
     "version": "1.0.4",
     "autoload": {
         "psr-4": {
-            "ShveiderDto\\": "src/",
+            "ShveiderDto\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
             "ShveiderDtoTest\\": "tests/"
         }
     },
