@@ -6,3 +6,4 @@ tests/DTO/*/Transfers/Generated
 *.log
 *.sql
 .idea
+composer.lock

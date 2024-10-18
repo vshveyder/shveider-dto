@@ -2,7 +2,8 @@
     "name": "vitalii.shveider/shveider-dto",
     "type": "library",
     "license": "MIT",
-    "version": "1.1.0",
+    "description": "Data Transfer Object that helps you to operate with data.",
+    "keywords": ["DataTransferObject", "DTO", "VO", "Object", "PHP", "transfer"],
     "autoload": {
         "psr-4": {
             "ShveiderDto\\": "src/"
