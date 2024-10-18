@@ -2,7 +2,9 @@
 
 namespace ShveiderDto\Attributes;
 
-#[\Attribute]
+use Attribute;
+
+#[Attribute(Attribute::TARGET_CLASS)]
 readonly class TransferCache
 {
     public function __construct(public string $name)
