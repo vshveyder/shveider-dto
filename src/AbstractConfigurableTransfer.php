@@ -55,6 +55,6 @@ abstract class AbstractConfigurableTransfer extends AbstractTransfer
 
     protected function findRegisteredVars(): array
     {
-        return $this->__registered_vars;
+        return $this->__registered_vars ?? [];
     }
 }
