@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace ShveiderDto\Plugins;
 
@@ -27,17 +27,22 @@ class RegisteredVarsShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlug
 
             $abstractDtoObject->addRegisteredVar($property->getName());
 
-            if (!class_exists('\\' . $property->getType()->getName())) {
+            if (!class_exists('\\' . ltrim($property->getType()->getName(), '\\'))) {
                 continue;
             }
 
             $parentClass = get_parent_class('\\' . $property->getType()->getName());
 
-            if (is_a($parentClass, AbstractTransfer::class) || in_array($parentClass, [AbstractTransfer::class, AbstractReflectionTransfer::class, AbstractCachedTransfer::class, AbstractConfigurableTransfer::class])) {
+            if (!$parentClass) {
+                continue;
+            }
+
+            if (is_a($parentClass, AbstractTransfer::class, true) || in_array($parentClass, [AbstractTransfer::class, AbstractReflectionTransfer::class, AbstractCachedTransfer::class, AbstractConfigurableTransfer::class])) {
                 $abstractDtoObject
                     ->addRegisteredTransfer($property->getName(), $property->getType()->getName());
             }
 
+            // TODO: Not fully implemented. Not decided how to implement it better.
             if ($parentClass === \ArrayObject::class || $property->getType()->getName() === \ArrayObject::class) {
                 $abstractDtoObject
                     ->addRegisteredArrayObject($property->getName(), $property->getType()->getName());
