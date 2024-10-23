@@ -25,8 +25,12 @@ abstract class AbstractCastDynamicTransfer extends AbstractCastTransfer
 
         if (isset($this->__methods['set'][$name])) {
             $propertyName = $this->__methods['get'][$name];
+            $value = $arguments[0] ?? null;
 
-            return $this->fromArray([$propertyName => $arguments[0] ?? null]);
+            $this->modify($propertyName)->$propertyName =
+                is_array($value) ? $this->getValueFromArray($value, $name) : $value;
+
+            return $this;
         }
 
         throw new BadMethodCallException($name);
