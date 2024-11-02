@@ -29,9 +29,11 @@ interface DataTransferObjectInterface
      *  - Takes modified properties in your data transfer object and returns it ass array key => value.
      *  - Modified properties: properties that was modified by fromArray and set* method.
      *
+     * @param bool $recursive
+     *
      * @return array
      */
-    public function modifiedToArray(): array;
+    public function modifiedToArray(bool $recursive = false): array;
 
     /**
      * Specification:

@@ -6,8 +6,6 @@ use ReflectionClass;
 use ReflectionNamedType;
 use ReflectionParameter;
 use ReflectionProperty;
-use ShveiderDto\AbstractCachedTransfer;
-use ShveiderDto\AbstractConfigurableTransfer;
 use ShveiderDto\AbstractTransfer;
 use ShveiderDto\Attributes\ValueWithConstruct;
 use ShveiderDto\GenerateDTOConfig;

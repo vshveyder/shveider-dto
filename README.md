@@ -2,50 +2,45 @@
 
 This library provides various implementations of Data Transfer Objects (DTOs) that can be used to facilitate the transfer of data between layers in your application. It offers multiple strategies to handle DTOs with flexibility and performance in mind.
 
-## Key Features
-
-- **Reflection-Based DTOs**: Easy to use but slower due to the use of reflection.
-- **Configurable DTOs**: DTOs with configurable traits that provide setters, getters, and additional customization options.
-- **Cached DTOs**: DTOs with cached metadata to improve performance by avoiding reflection.
-- **Cast DTOs**: Simplified DTOs that rely on casting without additional setters or getters.
-
 **DTO Can't work with private properties.**
 Because parent class or trait don't have access to child props.
 
 **But AbstractReflectionTransfer have access to all type of props.**
 
-## Available DTO Types
+## DTO Types
 
-### 1. `AbstractReflectionTransfer`
-- Uses reflection to populate data from arrays and vice versa.
-- Suitable for quick, dynamic DTO generation.
-- **Performance**: Slower due to reflection overhead.
-
-[read more](docs/AbstractReflectionTransfer.md)
-
-### 2. `AbstractConfigurableTransfer`
+### 1. `AbstractConfigurableTransfer`
 - Uses traits to configure behavior (setters, getters, adders).
 - Provides a more structured approach with configurable fields.
 - **Performance**: Faster than reflection-based DTOs but with more boilerplate code.
 
 [read more](docs/AbstractConfigurableTransfer.md)
 
-### 3. `AbstractCastTransfer`
+### 2. `AbstractCastTransfer`
 - Relies on casting to handle DTO properties.
 - Simplified, does not provide setters/getters.
 - **Performance**: Very fast, but lacks the convenience of configurable options.
 
 [read more](docs/AbstractCastTransfer.md)
-### 4. `AbstractCachedTransfer`
+
+### 3. `AbstractCachedTransfer`
 - Uses a generated cache to store DTO metadata, avoiding the overhead of reflection.
 - Ideal for performance-critical applications.
 - **Performance**: Fast, with no runtime reflection involved.
 
 [read more](docs/AbstractCachedTransfer.md)
 
-## Generating Cache and Traits
+### 2. `AbstractCastDynamicTransfer`
+- Relies on casting to handle DTO properties.
+- Simplified, does not provide setters/getters.
+- **Performance**: Very fast, but lacks the convenience of configurable options.
+- Has getters, setters and adders.
 
-You can generate the necessary cache and traits for DTOs using the provided commands:
+## Commands
+
+### Generating Cache Command
+
+You can generate the necessary cache for DTOs using the provided command:
 
 ```php
 (new GenerateDtoCacheFile(
@@ -58,6 +53,7 @@ You can generate the necessary cache and traits for DTOs using the provided comm
 ))->execute();
 ```
 
+### Generating Traits Command
 Use the following command to generate DTO traits:
 
 ```php
@@ -172,5 +168,3 @@ More documentation:
 - [USE_CACHE_GENERATOR.md](docs%2FUSE_CACHE_GENERATOR.md)
 - [USING_REFLECTION.md](docs%2FUSING_REFLECTION.md)
 - [USING_TRAITS.md](docs%2FUSING_TRAITS.md)
-
-

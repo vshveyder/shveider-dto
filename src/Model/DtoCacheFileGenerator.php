@@ -49,6 +49,8 @@ class DtoCacheFileGenerator
 
     protected function putContents(string $path, string $namespace, string $className, string $cache): void
     {
+        file_exists(dirname($path)) || mkdir(dirname($path));
+
         file_put_contents($path, <<<PHP
 <?php declare(strict_types=1);
 

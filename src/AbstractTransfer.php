@@ -41,7 +41,7 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
         $result = [];
 
         foreach ($this->__modified as $name => $_) {
-            $result[$name] = $recursive ? $this->recursiveToArray($name, $this->$name) : $this->$name;
+            $result[$name] = $recursive ? $this->recursiveModifiedToArray($name, $this->$name) : $this->$name;
         }
 
         return $result;
@@ -65,7 +65,7 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
             $set = $this->getRegisteredValueWithConstruct($name);
             $obj = array_shift($set);
 
-            return (new $obj(...ArrayHelper::shiftMulti($dataItem, $set)));
+            return count($set) > 0 ? new $obj(...ArrayHelper::shiftMulti($dataItem, $set)) : new $obj();
         }
 
         return $this->hasRegisteredArrayTransfers($name) ? $this->arrayTransfersFromArray($name, $dataItem) : $dataItem;
@@ -91,6 +91,23 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
         }
 
         return $this->__private_registered_vars = $vars;
+    }
+
+    protected function recursiveModifiedToArray(string $name, mixed $value): mixed
+    {
+        if (is_array($value) && $this->hasRegisteredArrayTransfers($name)) {
+            $values = [];
+
+            foreach ($value as $item) {
+                $values[] = $item && is_a($item, DataTransferObjectInterface::class)
+                    ? $item->modifiedToArray(true) : $item;
+            }
+
+            return $values;
+        }
+
+        return $value && is_a($value, DataTransferObjectInterface::class)
+            ? $value->modifiedToArray(true) : $value;
     }
 
     protected function arrayOfTransfersToArray(array $arrayValue, bool $recursive = false): array
@@ -119,7 +136,7 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
         $values = [];
 
         foreach ($arrayValues as $arrayValue) {
-            $values[] = is_array($arrayValue) ? (new $transfer)->fromArray($arrayValue) : $arrayValue;
+            $values[] = is_array($arrayValue) ? (new $transfer())->fromArray($arrayValue) : $arrayValue;
         }
 
         return $values;
@@ -140,11 +157,7 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
 
     abstract protected function getRegisteredValueWithConstruct(string $name): array;
 
-    /**
-     * @param string $name
-     *
-     * @return class-string<\ShveiderDto\AbstractTransfer>|null
-     */
+    /** @return class-string<\ShveiderDto\AbstractTransfer>|null */
     abstract protected function findRegisteredTransfer(string $name): ?string;
 
     abstract protected function findRegisteredVars(): ?array;

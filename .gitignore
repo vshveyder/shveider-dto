@@ -1,6 +1,7 @@
 vendor
 tests/Generated
 tests/DTO/*/Transfers/Generated
+tests/Transfers/Traits/Generated
 /.env
 /.env.*
 *.log
