@@ -16,9 +16,9 @@ class GetSetMethodShveiderDtoExpanderPlugin implements ShveiderDtoExpanderPlugin
     use GetTypeTrait;
 
     public function expand(
-        ReflectionClass   $reflectionClass,
+        ReflectionClass $reflectionClass,
         GenerateDTOConfig $config,
-        AbstractDtoClass  $abstractDtoObject
+        AbstractDtoClass $abstractDtoObject
     ): AbstractDtoClass {
         foreach ($reflectionClass->getProperties() as $property) {
             if ($property->isPrivate()) {

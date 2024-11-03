@@ -1,31 +1,18 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace ShveiderDto\Model;
 
-use ReflectionClass;
 use ShveiderDto\GenerateDTOConfig;
 use ShveiderDto\Model\Code\DtoTrait;
 
 readonly class DtoTraitGenerator
 {
-    /**
-     * @param array<\ShveiderDto\ShveiderDtoExpanderPluginsInterface> $expanderPlugins
-     */
-    public function __construct(private array $expanderPlugins)
-    {
-    }
-
     public function generate(
-        ReflectionClass $reflectionClass,
         GenerateDTOConfig $config,
         DtoTrait $trait,
         string $directory,
         string $transferNamespace,
     ): void {
-        foreach ($this->expanderPlugins as $expanderPlugin) {
-            $trait = $expanderPlugin->expand($reflectionClass, $config, $trait);
-        }
-
         $file = $this->resolveStorageAndReturnFilePath($config, $directory, $trait->getName());
 
         $trait->setMinified($config->isMinified());

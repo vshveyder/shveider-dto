@@ -8,6 +8,7 @@ use ShveiderDto\VO\DtoFile;
 
 class DtoFilesReader
 {
+    /** @return \Generator<\ShveiderDto\VO\DtoFile> */
     public function getFilesGenerator(GenerateDTOConfig $config): Generator
     {
         foreach (glob($config->getReadFrom(), GLOB_NOSORT) as $directory) {
@@ -31,6 +32,7 @@ class DtoFilesReader
                     base64_encode($fullNameSpace),
                     $this->getClassNamespaceFromFileContent($fileContent),
                     $this->getTraitName($fileContent),
+                    $this->getClassNameFromFileContent($fileContent),
                 );
             }
         }

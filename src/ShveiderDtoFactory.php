@@ -1,12 +1,11 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace ShveiderDto;
 
 use ShveiderDto\Helpers\DtoFilesReader;
 use ShveiderDto\Model\Code\Cache;
-use ShveiderDto\Model\Code\DtoClass;
+use ShveiderDto\Model\Code\DtoPhpDoc;
 use ShveiderDto\Model\Code\DtoTrait;
-use ShveiderDto\Model\DtoCacheFileGenerator;
 use ShveiderDto\Model\DtoTraitGenerator;
 use ShveiderDto\Plugins\ArrayOfShveiderDtoExpanderPlugin;
 use ShveiderDto\Plugins\GetSetMethodShveiderDtoExpanderPlugin;
@@ -16,17 +15,10 @@ use ShveiderDto\Plugins\TransferWithConstructDtoExpanderPlugin;
 
 class ShveiderDtoFactory
 {
-    /**
-     * @return \ShveiderDto\Model\DtoTraitGenerator
-     */
-    public function createDtoGenerator(): DtoTraitGenerator
+    /** @return \ShveiderDto\Model\DtoTraitGenerator */
+    public function createDtoTraitGenerator(): DtoTraitGenerator
     {
-        return new DtoTraitGenerator($this->getExpanderPlugins());
-    }
-
-    public function createDtoCacheFileGenerator(): DtoCacheFileGenerator
-    {
-        return new DtoCacheFileGenerator($this->getExpanderPlugins());
+        return new DtoTraitGenerator();
     }
 
     public function createDtoFilesReader(): DtoFilesReader
@@ -39,19 +31,17 @@ class ShveiderDtoFactory
         return new DtoTrait($name);
     }
 
+    public function createDtoPhpDoc(string $name): DtoPhpDoc
+    {
+        return new DtoPhpDoc($name);
+    }
+
     public function createDtoCache(string $name): Cache
     {
         return new Cache($name);
     }
 
-    public function createDtoClassGenerator(string $name): DtoClass
-    {
-        return new DtoClass($name);
-    }
-
-    /**
-     * @return array<int|string, \ShveiderDto\ShveiderDtoExpanderPluginsInterface>
-     */
+    /** @return array<int|string, \ShveiderDto\ShveiderDtoExpanderPluginsInterface> */
     public function getExpanderPlugins(): array
     {
         return [

@@ -4,36 +4,19 @@ namespace ShveiderDto\Command;
 
 use ReflectionClass;
 use ShveiderDto\AbstractConfigurableTransfer;
-use ShveiderDto\Attributes\TransferSkip;
-use ShveiderDto\GenerateDTOConfig;
-use ShveiderDto\Helpers\DtoFilesReader;
-use ShveiderDto\Model\DtoTraitGenerator;
-use ShveiderDto\ShveiderDtoFactory;
-use ShveiderDto\AbstractCachedTransfer;
 
-class GenerateDtoTraitsCommand
+class GenerateDtoTraitsCommand extends AbstractCommand
 {
-    protected DtoTraitGenerator $dtoGenerator;
-
-    protected DtoFilesReader $dtoFilesReader;
-
-    public function __construct(
-        protected readonly ShveiderDtoFactory $factory,
-        protected readonly GenerateDTOConfig $config,
-    ) {
-        $this->dtoGenerator = $this->factory->createDtoGenerator();
-        $this->dtoFilesReader = $this->factory->createDtoFilesReader();
-    }
-
     /** @throws \Exception */
     public function execute(): void
     {
         $this->validate();
         $this->checkWriteDir();
+        $dtoTraitGenerator = $this->factory->createDtoTraitGenerator();
 
         foreach ($this->dtoFilesReader->getFilesGenerator($this->config) as $dtoFile) {
             $emptyTrait = $this->factory->createDtoTrait($dtoFile->traitName);
-            $this->dtoGenerator->generateEmptyTrait($emptyTrait, $this->config, $dtoFile->filesDir, $dtoFile->dirNamespace);
+            $dtoTraitGenerator->generateEmptyTrait($emptyTrait, $this->config, $dtoFile->filesDir, $dtoFile->dirNamespace);
         }
 
         foreach ($this->dtoFilesReader->getFilesGenerator($this->config) as $dtoFile) {
@@ -43,28 +26,18 @@ class GenerateDtoTraitsCommand
 
             $reflectionClass = new ReflectionClass($dtoFile->getFullNamespace());
 
-            if (!$this->isDataTransferObject($reflectionClass)) {
-                $this->dtoGenerator
-                    ->deleteTrait($this->factory->createDtoTrait($dtoFile->traitName), $this->config, $dtoFile->filesDir);
-
-                continue;
-            }
-
-            if ($this->shouldBeSkipped($reflectionClass)) {
-                $this->dtoGenerator
+            if (!$this->isDataTransferObject($reflectionClass) || $this->shouldBeSkipped($reflectionClass)) {
+                $dtoTraitGenerator
                     ->deleteTrait($this->factory->createDtoTrait($dtoFile->traitName), $this->config, $dtoFile->filesDir);
 
                 continue;
             }
 
             $trait = $this->factory->createDtoTrait($dtoFile->traitName);
-            $this->dtoGenerator->generate($reflectionClass, $this->config, $trait, $dtoFile->filesDir, $dtoFile->dirNamespace);
-        }
-    }
+            $this->expandDtoClass($reflectionClass, $trait);
 
-    protected function shouldBeSkipped(ReflectionClass $reflectionClass): bool
-    {
-        return !empty($reflectionClass->getAttributes(TransferSkip::class));
+            $dtoTraitGenerator->generate($this->config, $trait, $dtoFile->filesDir, $dtoFile->dirNamespace);
+        }
     }
 
     /** @throws \Exception */
@@ -79,29 +52,6 @@ class GenerateDtoTraitsCommand
         }
     }
 
-    protected function isDataTransferObject(ReflectionClass $reflectionClass): bool
-    {
-        $parent = $reflectionClass->getParentClass();
-
-        if (!$parent) {
-            return false;
-        }
-
-        if ($parent->getName() === AbstractCachedTransfer::class) {
-            return false;
-        }
-
-        if ($parent->getName() === AbstractConfigurableTransfer::class) {
-            return true;
-        }
-
-        if (is_a($parent, ReflectionClass::class)) {
-            return $this->isDataTransferObject($parent);
-        }
-
-        return false;
-    }
-
     protected function checkWriteDir(): void
     {
         if (file_exists($this->config->getWriteTo())) {
@@ -111,5 +61,10 @@ class GenerateDtoTraitsCommand
                 exec(sprintf("rm -rf %s", escapeshellarg($this->config->getWriteTo())));
             }
         }
+    }
+
+    public function getWorkingClassName(): string
+    {
+        return AbstractConfigurableTransfer::class;
     }
 }

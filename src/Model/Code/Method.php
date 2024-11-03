@@ -17,22 +17,15 @@ class Method
      * @param string $returnType
      */
     public function __construct(
-        protected readonly string $name,
-        protected readonly array  $params,
-        protected readonly string $returnType
+        public readonly string $name,
+        public readonly array $params,
+        public readonly string $returnType
     ) {
     }
 
     public function setPhpDocReturnType(string $phpDocReturnType): static
     {
         $this->phpDocReturnType = $phpDocReturnType;
-
-        return $this;
-    }
-
-    public function insertRawBefore(string $raw): static
-    {
-        $this->body = [$raw, ...$this->body];
 
         return $this;
     }
@@ -47,18 +40,6 @@ class Method
     public function insertRaw(string $raw): static
     {
         $this->body[] = $raw;
-
-        return $this;
-    }
-
-    public function getBody(): array
-    {
-        return $this->body;
-    }
-
-    public function setBody(array $body): static
-    {
-        $this->body = $body;
 
         return $this;
     }

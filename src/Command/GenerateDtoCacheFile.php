@@ -4,28 +4,14 @@ namespace ShveiderDto\Command;
 
 use ReflectionClass;
 use ShveiderDto\AbstractCachedTransfer;
-use ShveiderDto\AbstractConfigurableTransfer;
-use ShveiderDto\AbstractTransfer;
-use ShveiderDto\Attributes\TransferCache;
-use ShveiderDto\Attributes\TransferSkip;
-use ShveiderDto\GenerateDTOConfig;
-use ShveiderDto\Helpers\DtoFilesReader;
-use ShveiderDto\Model\DtoCacheFileGenerator;
-use ShveiderDto\ShveiderDtoFactory;
 
-class GenerateDtoCacheFile
+class GenerateDtoCacheFile extends AbstractCommand
 {
-    protected DtoCacheFileGenerator $dtoCacheFileGenerator;
 
-    protected DtoFilesReader $dtoFilesReader;
-
-    public function __construct(
-        protected readonly ShveiderDtoFactory $factory,
-        protected readonly GenerateDTOConfig $config,
-    ) {
-        $this->dtoCacheFileGenerator = $this->factory->createDtoCacheFileGenerator();
-        $this->dtoFilesReader = $this->factory->createDtoFilesReader();
-    }
+    /**
+     * @var array<string, array<\ShveiderDto\Model\Code\Cache>>
+     */
+    private array $cache = [];
 
     public function execute(): void
     {
@@ -44,15 +30,11 @@ class GenerateDtoCacheFile
 
             $dtoCache = $this->factory->createDtoCache($dtoFile->traitName);
             $dtoCache->setClass($dtoFile->getFullNamespace());
-            $this->dtoCacheFileGenerator->generate($reflectionClass, $this->config, $dtoCache);
+            $this->expandDtoClass($reflectionClass, $dtoCache);
+            $this->cache[$dtoCache->getCacheClass() ?: $this->config->dtoCacheName][] = (string)$dtoCache;
         }
 
-        $this->dtoCacheFileGenerator->save($this->config->getWriteTo(), $this->config->getWriteToNamespace());
-    }
-
-    protected function shouldBeSkipped(ReflectionClass $reflectionClass): bool
-    {
-        return !empty($reflectionClass->getAttributes(TransferSkip::class));
+        $this->save($this->config->getWriteTo(), $this->config->getWriteToNamespace());
     }
 
     /** @throws \Exception */
@@ -67,39 +49,30 @@ class GenerateDtoCacheFile
         }
     }
 
-    protected function isDataTransferObject(ReflectionClass $reflectionClass): bool
+    public function getWorkingClassName(): string
     {
-        $parent = $reflectionClass->getParentClass();
-
-        if (!$parent) {
-            return false;
-        }
-
-        if ($parent->getName() === AbstractConfigurableTransfer::class) {
-            return false;
-        }
-
-        if ($parent->getName() === AbstractCachedTransfer::class) {
-            return true;
-        }
-
-        if ($this->hasTransferCacheAttribute($parent)) {
-            return true;
-        }
-
-        if (is_a($parent, ReflectionClass::class)) {
-            return $this->isDataTransferObject($parent);
-        }
-
-        return false;
+        return AbstractCachedTransfer::class;
     }
 
-    public function hasTransferCacheAttribute(ReflectionClass $class): bool
+    protected function save(string $writePath, string $writeNamespace): void
     {
-        if (!is_a($class->getName(), AbstractTransfer::class)) {
-            return false;
-        }
+        $writeNamespace = trim($writeNamespace, '/\\');
 
-        return !empty($class->getAttributes(TransferCache::class));
+        foreach ($this->cache as $className => $cache) {
+            $className = ucfirst($className);
+            $this->putContents(
+                rtrim($writePath, '/') . '/' . $className . '.php',
+                $writeNamespace,
+                $className,
+                implode(",\n\t\t", $cache),
+            );
+        }
+    }
+
+    protected function putContents(string $path, string $namespace, string $className, string $cache): void
+    {
+        file_exists(dirname($path)) || mkdir(dirname($path));
+        $file = "<?php declare(strict_types=1);\n\nnamespace $namespace;\n\nclass $className\n{\n\tpublic const CACHE = [\n\t\t$cache\n\t];\n}";
+        file_put_contents($path, $file);
     }
 }

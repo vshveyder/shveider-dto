@@ -1,5 +1,5 @@
 {
-    "name": "vitalii.shveider/shveider-dto",
+    "name": "shveider/dto",
     "type": "library",
     "license": "MIT",
     "description": "Data Transfer Object that helps you to operate with data.",

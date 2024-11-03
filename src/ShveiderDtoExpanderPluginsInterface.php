@@ -8,8 +8,8 @@ use ShveiderDto\Model\Code\AbstractDtoClass;
 interface ShveiderDtoExpanderPluginsInterface
 {
     public function expand(
-        ReflectionClass   $reflectionClass,
+        ReflectionClass $reflectionClass,
         GenerateDTOConfig $config,
-        AbstractDtoClass  $abstractDtoObject
+        AbstractDtoClass $abstractDtoObject
     ): AbstractDtoClass;
 }

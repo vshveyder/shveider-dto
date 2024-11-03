@@ -9,7 +9,8 @@ readonly class DtoFile
         public string $content,
         private string $fullNamespaceBase64,
         public string $dirNamespace,
-        public string $traitName
+        public string $traitName,
+        public string $fileName,
     ) {
     }
 
