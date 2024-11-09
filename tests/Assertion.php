@@ -33,8 +33,7 @@ readonly class Assertion
         return $this->assert($property ?: '$', 'is array');
     }
 
-    public function
-    propEqual(string $property, mixed $v): static
+    public function propEqual(string $property, mixed $v): static
     {
         $this->assert($property, '=', $v);
 
@@ -67,7 +66,7 @@ readonly class Assertion
             'null' => $v === null,
             'transfer' => is_a($v, DataTransferObjectInterface::class),
             default => false,
-        }, 'Assert that value [' . print_r($v, true) . ']. ' . $assertion . ' ' . $expected);
+        }, 'Assert that value {' . print_r($v, true) . '}. ' . $assertion . ' ' . $expected);
 
         return $this;
     }
@@ -103,5 +102,26 @@ readonly class Assertion
         }
 
         return $last ? $obj->$property : $this->_get($obj->$property, $properties);
+    }
+
+    public function set(string $path, mixed $value): void
+    {
+        $path = str_starts_with($path, '$.') ? $path : '$.' . $path;
+        $pathList = explode('.', $path);
+        $last = array_pop($pathList);
+        $obj = $this->_get($this->value, $pathList);
+
+        if (is_array($obj)) {
+            $value[$last] = $value;
+            return;
+        }
+
+        if ($this->useMethod) {
+            $method = 'set' . ucfirst($last);
+            $obj->$method($value);
+            return;
+        }
+
+        $obj->$last = $value;
     }
 }

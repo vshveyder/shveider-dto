@@ -1,37 +1,43 @@
 #!/bin/sh
 
-dir=$(pwd)
+dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 cd $dir;
 cd ../;
 
-echo "Run AbstractCachedTransfer Test \n"
+echo "Creating Transfers for tests...";
+php public/index-test-create-transfers.php;
+if [ $? -ne 0 ]; then
+  exit 1
+fi
+
+sleep 1
+
+echo "Run index-test-generate-cache Test \n"
 php public/index-test-generate-cache.php;
-php public/index-test-cache.php;
 if [ $? -ne 0 ]; then
   exit 1
 fi
 
-echo "Run AbstractCastTransfer Test \n"
-php public/index-test-cast.php;
-if [ $? -ne 0 ]; then
-  exit 1
-fi
+sleep 1
 
-echo "Run AbstractCastDynamicTransfer Test \n"
-php public/index-test-cast-dynamic.php;
-if [ $? -ne 0 ]; then
-  exit 1
-fi
-
-echo "Run AbstractConfigurableTransfer Test \n"
-php public/index-test-configurable.php;
-if [ $? -ne 0 ]; then
-  exit 1
-fi
-
-echo "Run AbstractConfigurableTransfer for traits Test \n"
+echo "Run index-test-generate-traits Test \n"
 php public/index-test-generate-traits.php;
-php public/index-test-traits.php;
+if [ $? -ne 0 ]; then
+  exit 1
+fi
+
+sleep 1
+
+echo "Run index-test-generate-php-doc Test \n"
+php public/index-test-generate-php-doc.php;
+if [ $? -ne 0 ]; then
+  exit 1
+fi
+
+sleep 1
+
+echo "running test for transfers: \n"
+php public/index-test-transfers.php;
 
 echo "Finished!\n"

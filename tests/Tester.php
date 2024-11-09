@@ -2,7 +2,7 @@
 
 namespace ShveiderDtoTest;
 
-class Tester
+readonly class Tester
 {
     public function __construct(private bool $useMethod)
     {

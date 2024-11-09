@@ -2,8 +2,11 @@
 
 namespace ShveiderDto;
 
+use ShveiderDto\Traits\ModifiedOverrideTrait;
+
 class AbstractCastTransfer extends AbstractTransfer
 {
+    use ModifiedOverrideTrait;
     protected const SHARED_SKIPPED_PROPERTIES = [
         '__modified' => 0,
         '__private_registered_vars' => 1,

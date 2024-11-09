@@ -11,8 +11,8 @@ echo PHP_EOL . 'Generating cache.' . PHP_EOL;
 (new GenerateDtoCacheFile(
     new ShveiderDtoFactory(),
     new GenerateDTOConfig(
-        readFrom: __DIR__ . '/../public/Transfers/Cached',
-        writeTo: __DIR__ . '/../public/Cache/',
+        readFrom: __DIR__ . '/../Transfers/ProjectLevelAbstractCachedTransfer',
+        writeTo: __DIR__ . '/../Cache/',
         writeToNamespace: 'ShveiderDtoTest\Cache',
     ),
 ))->execute();

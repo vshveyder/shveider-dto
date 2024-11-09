@@ -26,20 +26,20 @@ class GeneratePhpDocStubCommand extends AbstractCommand
             $newContent = '';
             $stream = fopen($filePath, 'r');
             $found = false;
-            while (($line = fgets($stream)) !== false) {
+            while ($line = fgets($stream)) {
                 if (str_starts_with($line, '/**') || str_starts_with($line, ' *') || str_starts_with($line, ' */')) {
                     continue;
                 }
 
                 if (!$found && str_starts_with($line, 'class ')) {
-                    $newContent .= $dtoPhpDoc;
+                    $newContent .= $dtoPhpDoc . PHP_EOL;
                     $found = true;
                 }
 
                 $newContent .= $line;
             }
 
-            fclose($stream);
+            fclose($stream);var_dump($newContent);
             file_put_contents($filePath, $newContent);
         }
     }

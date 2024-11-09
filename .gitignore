@@ -1,5 +1,6 @@
 vendor
 tests/Generated
+tests/Transfers
 tests/DTO/*/Transfers/Generated
 tests/Transfers/Traits/Generated
 /.env

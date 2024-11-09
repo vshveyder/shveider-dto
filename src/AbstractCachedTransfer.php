@@ -3,9 +3,12 @@
 namespace ShveiderDto;
 
 use ShveiderDto\Helpers\TransferCacheReader;
+use ShveiderDto\Traits\ModifiedOverrideTrait;
 
 abstract class AbstractCachedTransfer extends AbstractTransfer
 {
+    use ModifiedOverrideTrait;
+
     protected const SHARED_SKIPPED_PROPERTIES = [
         '__modified' => 0,
         '__private_registered_vars' => 1,

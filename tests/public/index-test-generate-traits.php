@@ -8,7 +8,7 @@ use ShveiderDto\ShveiderDtoFactory;
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 $sharedConfig = new GenerateDTOConfig(
-    __DIR__ . '/../public/Transfers/Traits',
+    __DIR__ . '/../Transfers/AbstractConfigurableTransfer',
     minified: false,
 );
 
@@ -28,8 +28,8 @@ foreach ((new DtoFilesReader())->getFilesGenerator($sharedConfig) as $item) {
 }
 
 $modulesConfig = new GenerateDTOConfig(
-    __DIR__ . '/../public/Transfers/Traits',
-    __DIR__ . '/../public/Generated',
+    __DIR__ . '/../Transfers/AbstractConfigurableTransfer',
+    __DIR__ . '/../Transfers/Generated',
     'ShveiderDtoTest\Generated',
     minified: true,
 );
@@ -41,7 +41,7 @@ foreach ((new DtoFilesReader())->getFilesGenerator($sharedConfig) as $item) {
         continue;
     }
 
-    assert(file_exists(__DIR__ . '/../public/Generated/' . $item->traitName . '.php'));
+    assert(file_exists(__DIR__ . '/../Transfers/Generated/' . $item->traitName . '.php'));
     $namespace = $item->getFullNamespace();
     class_exists($namespace . '\\' . $item->traitName);
     var_dump($namespace . '\\' . $item->traitName);

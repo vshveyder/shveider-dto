@@ -2,6 +2,8 @@
 
 namespace ShveiderDto;
 
+use ShveiderDto\Traits\ModifiedOverrideTrait;
+
 /**
  * @property array<string> $__registered_vars
  * - Uses for mapping fields in helping methods. If not set - get_class_vars is used.

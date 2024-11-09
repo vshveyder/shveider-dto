@@ -38,11 +38,49 @@ class TestCase
         protected DataTransferObjectInterface $transfer,
         protected string $addressTransferClass,
         protected string $addressCityTransferClass,
+        protected string $customerTransferClass
     ) {
         $this->tester = new Tester($this->useMethod);
     }
 
-    public function testFromArrayToArray(): void
+    public function testInterface(): void
+    {
+        $this->testFromArrayToArray();
+        $this->testModifiedToArray();
+        $this->testToJson();
+
+        $this->testValueObject();
+    }
+
+    public function testMethodsFeatures(): void
+    {
+        $this->testAssociativeMethods();
+        $this->testAddMethods();
+    }
+
+    protected function testToJson(): void
+    {
+        $this->transfer->fromArray([
+            'customer' => self::CUSTOMER,
+            'testVo' => new TestVo('v string', 1234, [1, 2, 3]),
+            'testAssociative' => [],
+        ]);
+
+        $json = $this->transfer->toJson();
+        $this->transfer->fromArray(json_decode($json, true));
+
+        $this->tester->assert($this->transfer)
+            ->transfer('customer')
+            ->propEqual('customer.name', self::CUSTOMER['name'])
+            ->propEqual('customer.email', self::CUSTOMER['email'])
+            ->propEqual('customer.phone', self::CUSTOMER['phone'])
+            ->property('customer.addresses', 'is array')
+            ->property('customer.addresses', 'count', 2);
+
+        $this->assertAddresses();
+    }
+
+    protected function testFromArrayToArray(): void
     {
         $this->transfer->fromArray([
             'customer' => self::CUSTOMER,
@@ -92,7 +130,7 @@ class TestCase
             ->propEqual('testVo.$vArray.2', 3);
     }
 
-    public function testAddMethods(): void
+    protected function testAddMethods(): void
     {
         /** @var class-string<\ShveiderDto\AbstractTransfer> $addressTransferClass */
         $addressTransferClass = $this->addressTransferClass;
@@ -115,7 +153,7 @@ class TestCase
         $this->assertAddresses();
     }
 
-    public function testAssociativeMethods(): void
+    protected function testAssociativeMethods(): void
     {
         $this->transfer->fromArray(['testAssociative' => []]);
         $this->tester->assert($this->transfer)
@@ -133,7 +171,7 @@ class TestCase
             ->propEqual('testAssociative.attributes.attr3', 'attr_val_3');
     }
 
-    public function testValueObject(): void
+    protected function testValueObject(): void
     {
         $this->transfer->fromArray([
             'testVo' => ['vString' => 'val str', 'vInt' => 12345, 'vArray' => [1,2,3]],
@@ -148,15 +186,36 @@ class TestCase
             ->propEqual('testVo.$vArray.2', 3);
     }
 
-    public function testModifiedToArray(): void
+    protected function testModifiedToArray(): void
     {
+        $assertionCallback = static function (Tester $tester, DataTransferObjectInterface $dataTransferObject): void {
+            $tester->assert($dataTransferObject->modifiedToArray())
+                ->is('count', 2)
+                ->property('customer', 'transfer')
+                ->property('testVo', 'is_a', TestVo::class)
+                ->propEqual('customer.name', self::CUSTOMER['name'])
+                ->propertyNotInitialized('customer', 'email')
+                ->propertyNotInitialized('customer', 'phone')
+                ->propEqual('testVo.$vString', 'v string')
+                ->propEqual('testVo.$vInt', 1234)
+                ->propEqual('testVo.$vArray.0', 1)
+                ->propEqual('testVo.$vArray.1', 2)
+                ->propEqual('testVo.$vArray.2', 3);
+
+            $tester->assert($dataTransferObject->modifiedToArray(true))
+                ->is('count', 2)
+                ->property('customer', 'array')
+                ->property('customer', 'count', 1)
+                ->property('testVo', 'is_a', TestVo::class);
+        };
+
         // reset modified property for test.
         $reflectionTransfer = new \ReflectionObject($this->transfer);
-        $reflectionTransfer->getProperty('__modified')->setValue($this->transfer, []);
+        $transferClass = '\\' . $reflectionTransfer->getName();
+        $this->transfer = new $transferClass();
+
         $modified = $this->transfer->modifiedToArray();
-        $this->tester->assert($modified)
-            ->is('array')
-            ->is('count', 0);
+        $this->tester->assert($modified)->is('array')->is('count', 0);
 
         $this->transfer->fromArray([
             'customer' => [
@@ -165,26 +224,37 @@ class TestCase
             'testVo' => new TestVo('v string', 1234, [1, 2, 3]),
         ]);
 
-        $modified = $this->transfer->modifiedToArray();
-        $this->tester->assert($modified)
-            ->is('count', 2)
-            ->property('customer', 'transfer')
-            ->property('testVo', 'is_a', TestVo::class)
-            ->propEqual('customer.name', self::CUSTOMER['name'])
-            ->propertyNotInitialized('customer', 'email')
-            ->propertyNotInitialized('customer', 'phone')
-            ->propEqual('testVo.$vString', 'v string')
-            ->propEqual('testVo.$vInt', 1234)
-            ->propEqual('testVo.$vArray.0', 1)
-            ->propEqual('testVo.$vArray.1', 2)
-            ->propEqual('testVo.$vArray.2', 3);
+        $assertionCallback($this->tester, $this->transfer);
 
-        $modified = $this->transfer->modifiedToArray(true);
-        $this->tester->assert($modified)
-            ->is('count', 2)
-            ->property('customer', 'array')
-            ->property('customer', 'count', 1)
-            ->property('testVo', 'is_a', TestVo::class);
+        // reset modified property for test.
+        $reflectionTransfer = new \ReflectionObject($this->transfer);
+        $transferClass = '\\' . $reflectionTransfer->getName();
+        $this->transfer = new $transferClass();
+
+        $assertion = $this->tester->assert($this->transfer);
+        $assertion->set('customer', new ($this->customerTransferClass)());
+        $assertion->set('customer.name', self::CUSTOMER['name']);
+        $assertion->set('testVo', new TestVo('v string', 1234, [1, 2, 3]));
+
+        $assertionCallback($this->tester, $this->transfer);
+
+        if (!$this->useMethod) {
+            return;
+        }
+
+        // reset modified property for test.
+        $reflectionTransfer = new \ReflectionObject($this->transfer);
+        $transferClass = '\\' . $reflectionTransfer->getName();
+        $this->transfer = new $transferClass();
+        $assertion = $this->tester->assert($this->transfer);
+        $assertion->set('customer', new ($this->customerTransferClass)());
+        $assertion->set('customer.nickName1', '');
+        $assertion->set('customer.nickName2', null);
+        $assertion->set('customer.nickName3', null);
+        $this->tester->assert($this->transfer->modifiedToArray(true))
+            ->propEqual('customer.nickName1', '')
+            ->propEqual('customer.nickName2', null)
+            ->propEqual('customer.nickName3', null);
     }
 
     protected function assertAddresses(): void
