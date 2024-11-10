@@ -23,5 +23,8 @@
     ],
     "require": {
         "php": ">=8.2"
-    }
+    },
+    "bin": [
+        "bin/shveider-dto"
+    ]
 }
