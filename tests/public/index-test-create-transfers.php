@@ -1,20 +1,20 @@
 <?php
 
-const MAIN_TRANSFER = [
+$MAIN_TRANSFER = [
     'testAssociative' => 'TestAssociativeTransfer::class',
     'customer' => 'CustomerTransfer::class',
 ];
-const MAIN_CONSTRUCTS = [
+$MAIN_CONSTRUCTS = [
     'testVo' => ['TestVo::class', 'vString', 'vInt', 'vArray'],
 ];
-const CUSTOMER_COLLECTIONS = [
+$CUSTOMER_COLLECTIONS = [
     'addresses' => 'AddressTransfer::class',
 ];
 
-const ADDRESS_TRANSFERS = ['city' => 'CityTransfer::class'];
-const ADDRESS_CONSTRUCTS = ['city' => ['key', 'name']];
+$ADDRESS_TRANSFERS = ['city' => 'CityTransfer::class'];
+$ADDRESS_CONSTRUCTS = ['city' => ['key', 'name']];
 
-const DTO = [
+$DTO = [
     'MainTransfer' => [
         'property' => [
             'customer' => 'CustomerTransfer',
@@ -24,18 +24,12 @@ const DTO = [
             ],
             'testAssociative' => 'TestAssociativeTransfer',
         ],
-        '__casts' => [
-            'transfers' => MAIN_TRANSFER,
-            'constructs' => MAIN_CONSTRUCTS,
-        ],
-        '__registered_transfers' => MAIN_TRANSFER,
-        '__registered_values_with_construct' => MAIN_CONSTRUCTS,
+        '__casts' => ['transfers' => $MAIN_TRANSFER, 'constructs' => $MAIN_CONSTRUCTS],
+        '__registered_transfers' => $MAIN_TRANSFER,
+        '__registered_values_with_construct' => $MAIN_CONSTRUCTS,
     ],
     'CityTransfer' => [
-        'construct' => [
-            'key' => 'string',
-            'name' => 'string',
-        ],
+        'construct' => ['key' => 'string', 'name' => 'string'],
     ],
     'CustomerTransfer' => [
         'property' => [
@@ -56,10 +50,8 @@ const DTO = [
                 'attr' => ["ArrayOf(AddressTransfer::class, 'address')"]
             ],
         ],
-        '__casts' => [
-            'collections' => CUSTOMER_COLLECTIONS,
-        ],
-        '__registered_array_transfers' => CUSTOMER_COLLECTIONS,
+        '__casts' => ['collections' => $CUSTOMER_COLLECTIONS],
+        '__registered_array_transfers' => $CUSTOMER_COLLECTIONS,
     ],
     'TestAssociativeTransfer' => [
         'property' => [
@@ -69,9 +61,7 @@ const DTO = [
                 'default' => '[]',
             ],
         ],
-        '__casts' => [
-            'singular' => ['attributes' => 'attribute'],
-        ],
+        '__casts' => ['singular' => ['attributes' => 'attribute']],
     ],
     'AddressTransfer' => [
         'property' => [
@@ -82,28 +72,33 @@ const DTO = [
             ],
         ],
         '__casts' => [
-            'transfers' => ADDRESS_TRANSFERS,
-            'constructs' => ADDRESS_CONSTRUCTS,
+            'transfers' => $ADDRESS_TRANSFERS,
+            'constructs' => $ADDRESS_CONSTRUCTS,
         ],
-        '__registered_transfers' => ADDRESS_TRANSFERS,
-        '__registered_values_with_construct' => ADDRESS_CONSTRUCTS,
+        '__registered_transfers' => $ADDRESS_TRANSFERS,
+        '__registered_values_with_construct' => $ADDRESS_CONSTRUCTS,
     ],
 ];
 
-const WRITE_CASTS_FOR = ['AbstractCastDynamicTransfer', 'AbstractCastTransfer'];
-const WRITE_REG_FOR = ['AbstractSetTransfer'];
+$WRITE_CASTS_FOR = ['AbstractCastDynamicTransfer', 'AbstractCastTransfer'];
+$WRITE_REG_FOR = ['AbstractSetTransfer'];
 
 !file_exists(__DIR__ . '/../Transfers') && mkdir(__DIR__ . '/../Transfers');
 !file_exists(__DIR__ . '/../Transfers/ProjectLevelAbstractCachedTransfer') && mkdir(__DIR__ . '/../Transfers/ProjectLevelAbstractCachedTransfer');
 file_put_contents(__DIR__ . '/../Transfers/ProjectLevelAbstractCachedTransfer/ProjectLevelAbstractCachedTransfer.php', "<?php\nnamespace ShveiderDtoTest\Transfers\ProjectLevelAbstractCachedTransfer;\nclass ProjectLevelAbstractCachedTransfer extends \ShveiderDto\AbstractCachedTransfer\n{\nprotected string \$__cache = '\ShveiderDtoTest\Cache\TransferCache';\n}");
 
-build('ProjectLevelAbstractCachedTransfer');
-build('AbstractCastDynamicTransfer');
-build('AbstractCastTransfer');
-build('AbstractConfigurableTransfer');
-build('AbstractSetTransfer');
+$DTO_TYPES = [
+    'ProjectLevelAbstractCachedTransfer',
+    'AbstractCastDynamicTransfer',
+    'AbstractCastTransfer',
+    'AbstractConfigurableTransfer',
+];
 
-function build(string $dtoType): void {
+foreach ($DTO_TYPES as $item) {
+    build($item, $DTO, $WRITE_CASTS_FOR, $WRITE_REG_FOR);
+}
+
+function build(string $dtoType, array $DTO, array $WRITE_CASTS_FOR, array $WRITE_REG_FOR): void {
     $dir = __DIR__ . '/../Transfers/' . $dtoType;
     !file_exists($dir) && mkdir($dir);
 
@@ -118,7 +113,7 @@ function build(string $dtoType): void {
         default => 'public ',
     };
 
-    foreach (DTO as $dtoName => $dto) {
+    foreach ($DTO as $dtoName => $dto) {
         $file = $dir . '/' . $dtoName . '.php';
         $class = $defaultClass;
         $class .= "class $dtoName extends $dtoType\n{\n";
@@ -131,11 +126,11 @@ function build(string $dtoType): void {
             $class .= getPropertiesDefinition($dto['property'], $security);
         }
 
-        if (in_array($dtoType, WRITE_CASTS_FOR) && isset($dto['__casts'])) {
+        if (in_array($dtoType, $WRITE_CASTS_FOR) && isset($dto['__casts'])) {
             $class .= "\nprotected array \$__casts = " . customExportVar($dto['__casts']) . ";\n";
         }
 
-        if (in_array($dtoType, WRITE_REG_FOR)) {
+        if (in_array($dtoType, $WRITE_REG_FOR)) {
             if (isset($dto['__registered_transfers'])) {
                 $class .= "\nprotected array \$__registered_transfers = " . customExportVar($dto['__registered_transfers']) . ";\n";
             }
