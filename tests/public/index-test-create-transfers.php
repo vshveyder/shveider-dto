@@ -1,19 +1,5 @@
 <?php
 
-$MAIN_TRANSFER = [
-    'testAssociative' => 'TestAssociativeTransfer::class',
-    'customer' => 'CustomerTransfer::class',
-];
-$MAIN_CONSTRUCTS = [
-    'testVo' => ['TestVo::class', 'vString', 'vInt', 'vArray'],
-];
-$CUSTOMER_COLLECTIONS = [
-    'addresses' => 'AddressTransfer::class',
-];
-
-$ADDRESS_TRANSFERS = ['city' => 'CityTransfer::class'];
-$ADDRESS_CONSTRUCTS = ['city' => ['key', 'name']];
-
 $DTO = [
     'MainTransfer' => [
         'property' => [
@@ -24,9 +10,15 @@ $DTO = [
             ],
             'testAssociative' => 'TestAssociativeTransfer',
         ],
-        '__casts' => ['transfers' => $MAIN_TRANSFER, 'constructs' => $MAIN_CONSTRUCTS],
-        '__registered_transfers' => $MAIN_TRANSFER,
-        '__registered_values_with_construct' => $MAIN_CONSTRUCTS,
+        '__casts' => [
+            'transfers' => [
+                'testAssociative' => 'TestAssociativeTransfer::class',
+                'customer' => 'CustomerTransfer::class',
+            ],
+            'constructs' => [
+                'testVo' => ['TestVo::class', 'vString', 'vInt', 'vArray'],
+            ],
+        ],
     ],
     'CityTransfer' => [
         'construct' => ['key' => 'string', 'name' => 'string'],
@@ -50,8 +42,11 @@ $DTO = [
                 'attr' => ["ArrayOf(AddressTransfer::class, 'address')"]
             ],
         ],
-        '__casts' => ['collections' => $CUSTOMER_COLLECTIONS],
-        '__registered_array_transfers' => $CUSTOMER_COLLECTIONS,
+        '__casts' => [
+            'collections' => [
+                'addresses' => 'AddressTransfer::class',
+            ],
+        ],
     ],
     'TestAssociativeTransfer' => [
         'property' => [
@@ -72,11 +67,9 @@ $DTO = [
             ],
         ],
         '__casts' => [
-            'transfers' => $ADDRESS_TRANSFERS,
-            'constructs' => $ADDRESS_CONSTRUCTS,
+            'transfers' => ['city' => 'CityTransfer::class'],
+            'constructs' => ['city' => ['key', 'name']],
         ],
-        '__registered_transfers' => $ADDRESS_TRANSFERS,
-        '__registered_values_with_construct' => $ADDRESS_CONSTRUCTS,
     ],
 ];
 

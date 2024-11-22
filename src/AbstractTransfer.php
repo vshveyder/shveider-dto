@@ -2,7 +2,9 @@
 
 namespace ShveiderDto;
 
-use ShveiderDto\Helpers\ArrayHelper;
+// TODO: 1. If we have values in construct with def values it's not modified
+// TODO: 2. We have transfer1 and transfer2 and both have transfer city inside. second transfer have changed city name.
+// TODO:    First transfer have city.name and city.key filled. so if we map modified to array second to first key will be lost.
 
 abstract class AbstractTransfer implements DataTransferObjectInterface
 {
@@ -56,7 +58,7 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
     {
         if ($transfer = $this->findRegisteredTransfer($name)) {
             return $this->hasRegisteredValueWithConstruct($name)
-                ? (new $transfer(...ArrayHelper::shiftMulti($dataItem, $this->getRegisteredValueWithConstruct($name))))
+                ? (new $transfer(...$this->shiftMulti($dataItem, $this->getRegisteredValueWithConstruct($name))))
                     ->fromArray($dataItem)
                 : (new $transfer())->fromArray($dataItem);
         }
@@ -65,7 +67,7 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
             $set = $this->getRegisteredValueWithConstruct($name);
             $obj = array_shift($set);
 
-            return count($set) > 0 ? new $obj(...ArrayHelper::shiftMulti($dataItem, $set)) : new $obj();
+            return count($set) > 0 ? new $obj(...$this->shiftMulti($dataItem, $set)) : new $obj();
         }
 
         return $this->hasRegisteredArrayTransfers($name) ? $this->arrayTransfersFromArray($name, $dataItem) : $dataItem;
@@ -147,6 +149,20 @@ abstract class AbstractTransfer implements DataTransferObjectInterface
         $this->__modified[$name] = true;
 
         return $this;
+    }
+
+    private function shiftMulti(array &$array, array $values): array
+    {
+        $res = [];
+
+        foreach ($values as $value) {
+            if (isset($array[$value])) {
+                $res[$value] = $array[$value];
+                unset($array[$value]);
+            }
+        }
+
+        return $res;
     }
 
     abstract protected function hasRegisteredArrayTransfers(string $name): bool;
